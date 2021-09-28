@@ -11,12 +11,6 @@
 
 backup
 
-#Check if file exists
-  bl  FileName
-  mflr  r3
-  branchl r12,0x8033796c
-  cmpwi r3,-1
-  beq FileNotExist
 #Get size of MnDt.dat
   bl  FileName
   mflr  r3
@@ -165,10 +159,6 @@ Assert_Name:
 blrl
 .string "m-ex"
 .align 2
-ErrorString:
-blrl
-.string "Error: MxDt.dat not found on disc\n"
-.align 2
 
 
 rtocOffsets:
@@ -274,18 +264,6 @@ rtocOffsets:
   .hword Arch_Metadata,-1
   .hword  -1
   .align 2
-
-FileNotExist:
-#OSReport
-  bl  ErrorString
-  mflr  r3
-  branchl r12,0x803456a8
-#Assert
-  bl  Assert_Name
-  mflr  r3
-  li  r4,0
-  load  r5,0x804d3940
-  branchl r12,0x80388220
 
 Exit:
   mr  r3,REG_HeapLo
