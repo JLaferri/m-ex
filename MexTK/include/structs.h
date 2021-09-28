@@ -22,6 +22,11 @@ typedef struct MTHHeader MTHHeader;
 typedef struct MTHPlayback MTHPlayback;
 typedef struct JPEGHeader JPEGHeader;
 
+// GX
+typedef struct GXColor GXColor;
+typedef struct GXRenderModeObj GXRenderModeObj;
+typedef struct GXPipe GXPipe;
+
 // HSD Objects
 typedef struct HSD_Obj HSD_Obj;
 typedef struct GOBJ GOBJ;
@@ -48,7 +53,7 @@ typedef struct HSD_Fog HSD_Fog;
 typedef struct JOBJSet JOBJSet;
 
 // Archive
-typedef struct ArchiveInfo ArchiveInfo;
+typedef struct HSD_Archive HSD_Archive;
 typedef struct MapHead MapHead;
 
 // Stage
@@ -59,6 +64,7 @@ typedef struct MapDesc MapDesc;
 typedef struct StageFile StageFile;
 typedef struct GrDesc GrDesc;
 typedef struct GrExtLookup GrExtLookup;
+typedef struct LineHazardDesc LineHazardDesc;
 typedef struct GeneralPoints GeneralPoints;
 typedef struct GeneralPointsInfo GeneralPointsInfo;
 
@@ -69,9 +75,9 @@ typedef struct MatchOffscreen MatchOffscreen;
 typedef struct MatchHUD MatchHUD;
 typedef struct MatchCamera MatchCamera;
 typedef struct CameraBox CameraBox;
-typedef struct MatchOffscreen MatchOffscreen;
 typedef struct MatchStandings MatchStandings;
 typedef struct PlayerStandings PlayerStandings;
+typedef struct ExclamData ExclamData;
 
 // Text
 typedef struct Text Text;
@@ -88,7 +94,6 @@ typedef struct ptclGen ptclGen;
 typedef struct GeneratorAppSRT GeneratorAppSRT;
 
 // Color
-typedef struct GXColor GXColor;
 typedef struct ColorOverlay ColorOverlay;
 
 // Item
@@ -124,12 +129,14 @@ typedef struct ReflectDesc ReflectDesc;
 typedef struct ShieldDesc ShieldDesc;
 typedef struct AbsorbDesc AbsorbDesc;
 typedef struct AfterImageDesc AfterImageDesc;
+typedef struct CPULeaderLog CPULeaderLog;
 typedef struct CPU CPU;
 typedef struct FtCollDesc FtCollDesc;
 typedef struct FtSFX FtSFX;
 typedef struct FtAction FtAction;
 typedef struct ftData ftData;
 typedef struct ftCommonData ftCommonData;
+typedef struct FtMultiJumpDesc FtMultiJumpDesc;
 typedef struct ftChkDevice ftChkDevice;
 typedef struct FtSymbolLookup FtSymbolLookup;
 typedef struct FtSymbols FtSymbols;
@@ -177,11 +184,11 @@ typedef struct SnapshotInfo SnapshotInfo;
 typedef struct SnapshotList SnapshotList;
 typedef struct MemSnapIconData MemSnapIconData;
 typedef struct Rules1 Rules1;
+typedef struct Rules4 Rules4;
 
 // Collision
 typedef struct CollData CollData;
 typedef struct ECBSize ECBSize;
-typedef struct DmgHazard DmgHazard;
 typedef struct CollLineInfo CollLineInfo;
 typedef struct CollLine CollLine;
 typedef struct CollVert CollVert;

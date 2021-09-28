@@ -4,12 +4,13 @@
 #include "structs.h"
 #include "datatypes.h"
 #include "obj.h"
+#include "gx.h"
 #include "color.h"
 #include "effects.h"
 #include "match.h"
 #include "collision.h"
 
-enum FtKind
+typedef enum FighterKind
 {
     FTKIND_MARIO,
     FTKIND_FOX,
@@ -44,8 +45,8 @@ enum FtKind
     FTKIND_GIRL,
     FTKIND_GIGABOWSER,
     FTKIND_SANDBAG,
-};
-enum CKind
+} FighterKind;
+typedef enum CharacterKind
 {
     CKIND_FALCON,
     CKIND_DK,
@@ -80,7 +81,20 @@ enum CKind
     CKIND_CRAZYHAND,
     CKIND_SANDBAG,
     CKIND_POPO,
-};
+} CharacterKind;
+typedef enum PlayerKind
+{
+    PKIND_HMN,
+    PKIND_CPU,
+    PKIND_DEMO,
+    PKIND_NONE,
+} PlayerKind;
+typedef enum TeamKind
+{
+    TEAMKIND_RED,
+    TEAMKIND_BLUE,
+    TEAMKIND_GREEN,
+} TeamKind;
 enum CPUType
 {
     CPTP_STAY,
@@ -102,17 +116,40 @@ enum CPUType
     CPTP_AIR,
     CPTP_ITEM,
 };
-enum PlayerKind
+
+// fighter callback priorities
+enum FtPri
 {
-    PKIND_HMN,
-    PKIND_CPU,
-    PKIND_DEMO,
-    PKIND_NONE,
+    FTPRI_HITLAG,
+    FTPRI_ANIM,
+    FTPRI_CPU,
+    FTPRI_IASA,
+    FTPRI_PHYS,
+    FTPRI_5, // nothing
+    FTPRI_ENVCOLL,
+    FTPRI_IK,
+    FTPRI_ACCESSORY,
+    FTPRI_GFX,
+    FTPRI_10,
+    FTPRI_11,
+    FTPRI_GRABCOLL,
+    FTPRI_HITCOLL,
+    FTPRI_DMGAPPLY,
+    FTPRI_15,
+    FTPRI_DYNAMICS,
+    FTPRI_17,
+    FTPRI_CAM,
+    FTPRI_19,
+    FTPRI_20,
+    FTPRI_21,
+    FTPRI_STATS,
 };
 
 // action state flags
 #define ASC_PRESERVE_FASTFALL 0x1
 #define ASC_PRESERVE_GFX 0x2
+#define ASC_PRESERVE_HITBOX 0x8
+#define ASC_PRESERVE_VELOCITY 0x20
 #define ASC_PRESERVE_EYE 0x80
 #define ASC_PRESERVE_SFX 0x200
 #define ASC_PRESERVE_COLANIM 0x1000
@@ -559,6 +596,36 @@ enum Ft_AttackKind
     ATKKIND_SPECIALS,
     ATKKIND_SPECIALHI,
     ATKKIND_SPECIALLW,
+    ATKKIND_22,
+    ATKKIND_23,
+    ATKKIND_24,
+    ATKKIND_25,
+    ATKKIND_26,
+    ATKKIND_27,
+    ATKKIND_28,
+    ATKKIND_29,
+    ATKKIND_30,
+    ATKKIND_31,
+    ATKKIND_32,
+    ATKKIND_33,
+    ATKKIND_34,
+    ATKKIND_35,
+    ATKKIND_36,
+    ATKKIND_37,
+    ATKKIND_38,
+    ATKKIND_39,
+    ATKKIND_40,
+    ATKKIND_41,
+    ATKKIND_42,
+    ATKKIND_43,
+    ATKKIND_44,
+    ATKKIND_45,
+    ATKKIND_46,
+    ATKKIND_47,
+    ATKKIND_48,
+    ATKKIND_49,
+    ATKKIND_DOWNATTACKU,
+    ATKKIND_DOWNATTACKD,
 };
 
 /*** Structs ***/
@@ -611,8 +678,8 @@ struct Playerblock
 struct PlayerData
 {
     // byte 0x0
-    u8 kind;
-    u8 status;
+    u8 c_kind; // 0x0
+    u8 p_kind;
     u8 stocks;
     u8 costume;
     // 0x4
@@ -913,8 +980,8 @@ struct AfterImageDesc
 
 struct HitVictim
 {
-    GOBJ *victim_gobj; // the gobj that was hit
-    int timer;         // items use this to wait until hitting this gobj again
+    void *data; // userdata of the object that was hit
+    int timer;  // items use this to wait until hitting this gobj again
 };
 
 struct ftHit
@@ -990,353 +1057,94 @@ struct FtAfterImageKey
     Vec3 rot;
 } FtAfterImageKey;
 
+struct CPULeaderLog
+{
+    int x0;                 // 0x0, 0xfc
+    u8 x4;                  // 0x4, 0x100
+    u8 x5;                  // 0x3, 0x101
+    u8 x6;                  // 0x6, 0x102
+    u8 x7;                  // 0x7, 0x103
+    int x8;                 // 0x8, 0x104
+    Vec3 pos;               // 0xc, 0x108
+    float facing_direction; // 0x18, 0x114
+};
+
 struct CPU
 {
-    int held;       // 0x0
-    s8 lstickX;     // 0x4
-    s8 lstickY;     // 0x5
-    s8 cstickX;     // 0x6
-    s8 cstickY;     // 0x7
-    int x8;         // 0x8
-    int ai;         // 0xc
-    int level;      // 0x10
-    int x14;        // 0x14
-    int x18;        // 0x18
-    int x1c;        // 0x1c
-    int x20;        // 0x20
-    int x24;        // 0x24
-    int x28;        // 0x28
-    int x2c;        // 0x2c
-    int x30;        // 0x30
-    int x34;        // 0x34
-    int x38;        // 0x38
-    int x3c;        // 0x3c
-    int x40;        // 0x40
-    int x44;        // 0x44
-    int x48;        // 0x48
-    int x4c;        // 0x4c
-    int x50;        // 0x50
-    int x54;        // 0x54
-    int x58;        // 0x58
-    int x5c;        // 0x5c
-    int x60;        // 0x60
-    int x64;        // 0x64
-    int x68;        // 0x68
-    int x6c;        // 0x6c
-    int x70;        // 0x70
-    int x74;        // 0x74
-    int x78;        // 0x78
-    int x7c;        // 0x7c
-    int x80;        // 0x80
-    int x84;        // 0x84
-    int x88;        // 0x88
-    int x8c;        // 0x8c
-    int x90;        // 0x90
-    int x94;        // 0x94
-    int x98;        // 0x98
-    int x9c;        // 0x9c
-    int xa0;        // 0xa0
-    int xa4;        // 0xa4
-    int xa8;        // 0xa8
-    int xac;        // 0xac
-    int xb0;        // 0xb0
-    int xb4;        // 0xb4
-    int xb8;        // 0xb8
-    int xbc;        // 0xbc
-    int xc0;        // 0xc0
-    int xc4;        // 0xc4
-    int xc8;        // 0xc8
-    int xcc;        // 0xcc
-    int xd0;        // 0xd0
-    int xd4;        // 0xd4
-    int xd8;        // 0xd8
-    int xdc;        // 0xdc
-    int xe0;        // 0xe0
-    int xe4;        // 0xe4
-    int xe8;        // 0xe8
-    int xec;        // 0xec
-    int xf0;        // 0xf0
-    int xf4;        // 0xf4
-    int xf8;        // 0xf8
-    int xfc;        // 0xfc
-    int x100;       // 0x100
-    int x104;       // 0x104
-    int x108;       // 0x108
-    int x10c;       // 0x10c
-    int x110;       // 0x110
-    int x114;       // 0x114
-    int x118;       // 0x118
-    int x11c;       // 0x11c
-    int x120;       // 0x120
-    int x124;       // 0x124
-    int x128;       // 0x128
-    int x12c;       // 0x12c
-    int x130;       // 0x130
-    int x134;       // 0x134
-    int x138;       // 0x138
-    int x13c;       // 0x13c
-    int x140;       // 0x140
-    int x144;       // 0x144
-    int x148;       // 0x148
-    int x14c;       // 0x14c
-    int x150;       // 0x150
-    int x154;       // 0x154
-    int x158;       // 0x158
-    int x15c;       // 0x15c
-    int x160;       // 0x160
-    int x164;       // 0x164
-    int x168;       // 0x168
-    int x16c;       // 0x16c
-    int x170;       // 0x170
-    int x174;       // 0x174
-    int x178;       // 0x178
-    int x17c;       // 0x17c
-    int x180;       // 0x180
-    int x184;       // 0x184
-    int x188;       // 0x188
-    int x18c;       // 0x18c
-    int x190;       // 0x190
-    int x194;       // 0x194
-    int x198;       // 0x198
-    int x19c;       // 0x19c
-    int x1a0;       // 0x1a0
-    int x1a4;       // 0x1a4
-    int x1a8;       // 0x1a8
-    int x1ac;       // 0x1ac
-    int x1b0;       // 0x1b0
-    int x1b4;       // 0x1b4
-    int x1b8;       // 0x1b8
-    int x1bc;       // 0x1bc
-    int x1c0;       // 0x1c0
-    int x1c4;       // 0x1c4
-    int x1c8;       // 0x1c8
-    int x1cc;       // 0x1cc
-    int x1d0;       // 0x1d0
-    int x1d4;       // 0x1d4
-    int x1d8;       // 0x1d8
-    int x1dc;       // 0x1dc
-    int x1e0;       // 0x1e0
-    int x1e4;       // 0x1e4
-    int x1e8;       // 0x1e8
-    int x1ec;       // 0x1ec
-    int x1f0;       // 0x1f0
-    int x1f4;       // 0x1f4
-    int x1f8;       // 0x1f8
-    int x1fc;       // 0x1fc
-    int x200;       // 0x200
-    int x204;       // 0x204
-    int x208;       // 0x208
-    int x20c;       // 0x20c
-    int x210;       // 0x210
-    int x214;       // 0x214
-    int x218;       // 0x218
-    int x21c;       // 0x21c
-    int x220;       // 0x220
-    int x224;       // 0x224
-    int x228;       // 0x228
-    int x22c;       // 0x22c
-    int x230;       // 0x230
-    int x234;       // 0x234
-    int x238;       // 0x238
-    int x23c;       // 0x23c
-    int x240;       // 0x240
-    int x244;       // 0x244
-    int x248;       // 0x248
-    int x24c;       // 0x24c
-    int x250;       // 0x250
-    int x254;       // 0x254
-    int x258;       // 0x258
-    int x25c;       // 0x25c
-    int x260;       // 0x260
-    int x264;       // 0x264
-    int x268;       // 0x268
-    int x26c;       // 0x26c
-    int x270;       // 0x270
-    int x274;       // 0x274
-    int x278;       // 0x278
-    int x27c;       // 0x27c
-    int x280;       // 0x280
-    int x284;       // 0x284
-    int x288;       // 0x288
-    int x28c;       // 0x28c
-    int x290;       // 0x290
-    int x294;       // 0x294
-    int x298;       // 0x298
-    int x29c;       // 0x29c
-    int x2a0;       // 0x2a0
-    int x2a4;       // 0x2a4
-    int x2a8;       // 0x2a8
-    int x2ac;       // 0x2ac
-    int x2b0;       // 0x2b0
-    int x2b4;       // 0x2b4
-    int x2b8;       // 0x2b8
-    int x2bc;       // 0x2bc
-    int x2c0;       // 0x2c0
-    int x2c4;       // 0x2c4
-    int x2c8;       // 0x2c8
-    int x2cc;       // 0x2cc
-    int x2d0;       // 0x2d0
-    int x2d4;       // 0x2d4
-    int x2d8;       // 0x2d8
-    int x2dc;       // 0x2dc
-    int x2e0;       // 0x2e0
-    int x2e4;       // 0x2e4
-    int x2e8;       // 0x2e8
-    int x2ec;       // 0x2ec
-    int x2f0;       // 0x2f0
-    int x2f4;       // 0x2f4
-    int x2f8;       // 0x2f8
-    int x2fc;       // 0x2fc
-    int x300;       // 0x300
-    int x304;       // 0x304
-    int x308;       // 0x308
-    int x30c;       // 0x30c
-    int x310;       // 0x310
-    int x314;       // 0x314
-    int x318;       // 0x318
-    int x31c;       // 0x31c
-    int x320;       // 0x320
-    int x324;       // 0x324
-    int x328;       // 0x328
-    int x32c;       // 0x32c
-    int x330;       // 0x330
-    int x334;       // 0x334
-    int x338;       // 0x338
-    int x33c;       // 0x33c
-    int x340;       // 0x340
-    int x344;       // 0x344
-    int x348;       // 0x348
-    int x34c;       // 0x34c
-    int x350;       // 0x350
-    int x354;       // 0x354
-    int x358;       // 0x358
-    int x35c;       // 0x35c
-    int x360;       // 0x360
-    int x364;       // 0x364
-    int x368;       // 0x368
-    int x36c;       // 0x36c
-    int x370;       // 0x370
-    int x374;       // 0x374
-    int x378;       // 0x378
-    int x37c;       // 0x37c
-    int x380;       // 0x380
-    int x384;       // 0x384
-    int x388;       // 0x388
-    int x38c;       // 0x38c
-    int x390;       // 0x390
-    int x394;       // 0x394
-    int x398;       // 0x398
-    int x39c;       // 0x39c
-    int x3a0;       // 0x3a0
-    int x3a4;       // 0x3a4
-    int x3a8;       // 0x3a8
-    int x3ac;       // 0x3ac
-    int x3b0;       // 0x3b0
-    int x3b4;       // 0x3b4
-    int x3b8;       // 0x3b8
-    int x3bc;       // 0x3bc
-    int x3c0;       // 0x3c0
-    int x3c4;       // 0x3c4
-    int x3c8;       // 0x3c8
-    int x3cc;       // 0x3cc
-    int x3d0;       // 0x3d0
-    int x3d4;       // 0x3d4
-    int x3d8;       // 0x3d8
-    int x3dc;       // 0x3dc
-    int x3e0;       // 0x3e0
-    int x3e4;       // 0x3e4
-    int x3e8;       // 0x3e8
-    int x3ec;       // 0x3ec
-    int x3f0;       // 0x3f0
-    int x3f4;       // 0x3f4
-    int x3f8;       // 0x3f8
-    int x3fc;       // 0x3fc
-    int x400;       // 0x400
-    int x404;       // 0x404
-    int x408;       // 0x408
-    int x40c;       // 0x40c
-    int x410;       // 0x410
-    int x414;       // 0x414
-    int x418;       // 0x418
-    int x41c;       // 0x41c
-    int x420;       // 0x420
-    int x424;       // 0x424
-    int x428;       // 0x428
-    int x42c;       // 0x42c
-    int x430;       // 0x430
-    int x434;       // 0x434
-    int x438;       // 0x438
-    int x43c;       // 0x43c
-    int x440;       // 0x440
-    int *curr_unk;  // 0x444
-    int *curr_unk2; // 0x448
-    int x44c;       // 0x44c
-    int x450;       // 0x450
-    int x454;       // 0x454
-    int x458;       // 0x458
-    int x45c;       // 0x45c
-    int x460;       // 0x460
-    int x464;       // 0x464
-    int x468;       // 0x468
-    int x46c;       // 0x46c
-    int x470;       // 0x470
-    int x474;       // 0x474
-    int x478;       // 0x478
-    int x47c;       // 0x47c
-    int x480;       // 0x480
-    int x484;       // 0x484
-    int x488;       // 0x488
-    int x48c;       // 0x48c
-    int x490;       // 0x490
-    int x494;       // 0x494
-    int x498;       // 0x498
-    int x49c;       // 0x49c
-    int x4a0;       // 0x4a0
-    int x4a4;       // 0x4a4
-    int x4a8;       // 0x4a8
-    int x4ac;       // 0x4ac
-    int x4b0;       // 0x4b0
-    int x4b4;       // 0x4b4
-    int x4b8;       // 0x4b8
-    int x4bc;       // 0x4bc
-    int x4c0;       // 0x4c0
-    int x4c4;       // 0x4c4
-    int x4c8;       // 0x4c8
-    int x4cc;       // 0x4cc
-    int x4d0;       // 0x4d0
-    int x4d4;       // 0x4d4
-    int x4d8;       // 0x4d8
-    int x4dc;       // 0x4dc
-    int x4e0;       // 0x4e0
-    int x4e4;       // 0x4e4
-    int x4e8;       // 0x4e8
-    int x4ec;       // 0x4ec
-    int x4f0;       // 0x4f0
-    int x4f4;       // 0x4f4
-    int x4f8;       // 0x4f8
-    int x4fc;       // 0x4fc
-    int x500;       // 0x500
-    int x504;       // 0x504
-    int x508;       // 0x508
-    int x50c;       // 0x50c
-    int x510;       // 0x510
-    int x514;       // 0x514
-    int x518;       // 0x518
-    int x51c;       // 0x51c
-    int x520;       // 0x520
-    int x524;       // 0x524
-    int x528;       // 0x528
-    int x52c;       // 0x52c
-    int x530;       // 0x530
-    int x534;       // 0x534
-    int x538;       // 0x538
-    int x53c;       // 0x53c
-    int x540;       // 0x540
-    int x544;       // 0x544
-    int x548;       // 0x548
-    int x54c;       // 0x54c
-    int x550;       // 0x550
-    int x554;       // 0x554
+    int held;                    // 0x0
+    s8 lstickX;                  // 0x4
+    s8 lstickY;                  // 0x5
+    s8 cstickX;                  // 0x6
+    s8 cstickY;                  // 0x7
+    s8 ltrigger;                 // 0x8
+    s8 rtrigger;                 // 0x9
+    int ai;                      // 0xc, 25 of these, function table at 800a1090
+    int level;                   // 0x10
+    int x14;                     // 0x14
+    int scenario_id;             // 0x18
+    int x1c;                     // 0x1c
+    int x20;                     // 0x20
+    int x24;                     // 0x24
+    int x28;                     // 0x28
+    int x2c;                     // 0x2c
+    int x30;                     // 0x30
+    int x34;                     // 0x34
+    float x38;                   // 0x38
+    float x3c;                   // 0x3c
+    float x40;                   // 0x40
+    void *x44;                   // 0x44
+    void *x48;                   // 0x48
+    int x4c;                     // 0x4c
+    int x50;                     // 0x50
+    float x54;                   // 0x54
+    float x58;                   // 0x58
+    float x5c;                   // 0x5c
+    int x60;                     // 0x60
+    int x64;                     // 0x64
+    int x68;                     // 0x68
+    int x6c;                     // 0x6c
+    int x70;                     // 0x70
+    int x74;                     // 0x74
+    int proc_num;                // 0x78, number of times it updated CPU logic in any capacity
+    int scenario_check_num;      // 0x7c, number of times it tried to update CPU scenario
+    int x80;                     // 0x80
+    int x84;                     // 0x84
+    int x88;                     // 0x88
+    int x8c;                     // 0x8c
+    int x90;                     // 0x90
+    int x94;                     // 0x94
+    int x98;                     // 0x98
+    int x9c;                     // 0x9c
+    int xa0;                     // 0xa0
+    int xa4;                     // 0xa4
+    int xa8;                     // 0xa8
+    int xac;                     // 0xac
+    int xb0;                     // 0xb0
+    int xb4;                     // 0xb4
+    int xb8;                     // 0xb8
+    int xbc;                     // 0xbc
+    int xc0;                     // 0xc0
+    int xc4;                     // 0xc4
+    u8 xc8;                      // 0xc8
+    int xcc;                     // 0xcc
+    int xd0;                     // 0xd0
+    int xd4;                     // 0xd4
+    int xd8;                     // 0xd8
+    int xdc;                     // 0xdc
+    int xe0;                     // 0xe0
+    int xe4;                     // 0xe4
+    int xe8;                     // 0xe8
+    u8 xec;                      // 0xec
+    int xf0;                     // 0xf0
+    int xf4;                     // 0xf4
+    int xf8;                     // 0xf8, flags
+    CPULeaderLog leader_log[30]; // 0xfc, contains a log of per frame data about the followers leader
+    void *unk_curr;              // 0x444
+    void *scenario_curr;         // 0x448, cpu scenario not updated if this contains a pointer @ 800b27b8
+    void *scenario_curr2;        // 0x44c, cpu scenario not updated if this contains a pointer @ 800b27c4
+    void *x450;                  // 0x450
+    u8 cmdscript_queue[256];     // 0x454, list of command ids for the follower to execute
+    void *cmdscript_curr;        // 0x554, points to a command in the cmdscript queue
 };
 
 struct ftCommonData
@@ -1870,7 +1678,7 @@ struct FighterData
     char xe;                                                   // 0xE
     char xf;                                                   // 0xF
     int state_id;                                              // 0x10
-    int anim_id;                                               // 0x14
+    int action_id;                                             // 0x14
     int common_state_num;                                      // 0x18
     FtState *ftstates_common;                                  // 0x1C
     FtState *ftstates_special;                                 // 0x20
@@ -2018,48 +1826,45 @@ struct FighterData
         int special_jump_action___1;                           // 0x28C
         int weight_dependent_throw_speed_flags;                // 0x290
     } attr;                                                    //
-    int x294;                                                  // 0x294
-    int x298;                                                  // 0x298
-    int x29C;                                                  // 0x29C
-    int x2A0;                                                  // 0x2A0
-    int x2A4;                                                  // 0x2A4
-    int x2A8;                                                  // 0x2A8
-    int x2AC;                                                  // 0x2AC
-    int x2B0;                                                  // 0x2B0
-    int x2B4;                                                  // 0x2B4
-    int x2B8;                                                  // 0x2B8
-    int x2BC;                                                  // 0x2BC
-    int x2C0;                                                  // 0x2C0
-    int x2C4;                                                  // 0x2C4
-    int x2C8;                                                  // 0x2C8
-    int x2CC;                                                  // 0x2CC
-    int x2D0;                                                  // 0x2D0
-    int *special_attributes;                                   // 0x2D4
-    int *special_attributes2;                                  // 0x2D8
-    int x2DC;                                                  // 0x2DC
-    int x2E0;                                                  // 0x2E0
-    int x2E4;                                                  // 0x2E4
-    int x2E8;                                                  // 0x2E8
-    int x2EC;                                                  // 0x2EC
-    FtDynamicBoneset dynamics_boneset[10];                     // 0x2f0
-    int dynamics_num;                                          // 0x3E0
-    struct script                                              //  0x3E4
-    {                                                          //
-        float script_event_timer;                              // 0x3E4
-        float script_frame_timer;                              // 0x3E8
-        int *script_current;                                   // 0x3EC
-        int script_loop_num;                                   // 0x3F0
-        int *script_return;                                    // 0x3F4
-    } script;                                                  //
-    int unk;                                                   // 0x3F8
-    int unk3FC;                                                // 0x3FC
-    int pointer_to_0x460;                                      // 0x400
-    int pointer_to_0x3c0;                                      // 0x404
-    ColorOverlay color[3];                                     // 0x408
-    void *LObj;                                                // 0x588
-    int anim_num;                                              // 0x58C
-    void *anim_curr_flags_ptr;                                 // 0x590
-    struct                                                     // 0x594
+    struct
+    {
+        Vec2 ground_light_offset; // 0x294
+        Vec2 ground_light_size;   // 0x29C
+        Vec2 ground_heavy_offset; // 0x2A4
+        Vec2 ground_heavy_size;   // 0x2AC
+        Vec2 air_light_offset;    // 0x2B4
+        Vec2 air_light_size;      // 0x2BC
+    } itpickup;
+    float jostle_offset;                   // 0x2C4
+    float jostle_range;                    // 0x2C8
+    int x2CC;                              // 0x2CC
+    FtMultiJumpDesc *multi_jump_desc;      // 0x2D0
+    void *special_attributes;              // 0x2D4
+    void *special_attributes2;             // 0x2D8
+    int x2DC;                              // 0x2DC
+    int x2E0;                              // 0x2E0
+    int x2E4;                              // 0x2E4
+    int x2E8;                              // 0x2E8
+    int x2EC;                              // 0x2EC
+    FtDynamicBoneset dynamics_boneset[10]; // 0x2f0
+    int dynamics_num;                      // 0x3E0
+    struct script                          //  0x3E4
+    {                                      //
+        float script_event_timer;          // 0x3E4
+        float script_frame_timer;          // 0x3E8
+        int *script_current;               // 0x3EC
+        int script_loop_num;               // 0x3F0
+        int *script_return;                // 0x3F4
+    } script;                              //
+    int unk;                               // 0x3F8
+    int unk3FC;                            // 0x3FC
+    int pointer_to_0x460;                  // 0x400
+    int pointer_to_0x3c0;                  // 0x404
+    ColorOverlay color[3];                 // 0x408
+    void *LObj;                            // 0x588
+    int anim_num;                          // 0x58C
+    void *anim_curr_flags_ptr;             // 0x590
+    struct                                 // 0x594
     {
         int transn_phys_update : 1;       // 0x80000000, gives fighter speed based on transN offset
         int loop_anim : 1;                // 0x40000000, loops animation
@@ -2187,7 +1992,7 @@ struct FighterData
     int x8b4;                      // 0x8b4
     int x8b8;                      // 0x8b8
     int x8bc;                      // 0x8bc
-    int x8c0;                      // 0x8c0
+    int curr_hold_anim;            // 0x8c0
     int x8c4;                      // 0x8c4
     int x8c8;                      // 0x8c8
     int x8cc;                      // 0x8cc
@@ -2210,7 +2015,7 @@ struct FighterData
     int x910;                      // 0x910
     ftHit hitbox[4];               // 0x914
     ftHit throw_hitbox[2];         // 0xdf4
-    ftHit unk_hitbox;              // 0x1064
+    ftHit thrown_hitbox;           // 0x1064
     u8 team_unk;                   // 0x119c, friendly fire related
     u8 grabber_ply;                // 0x119D, slot ID of the person grabbing this fighter
     u8 hurt_num;                   // 0x119E, number of hurtboxes
@@ -2299,7 +2104,7 @@ struct FighterData
         int x1900;                 // 0x1900
         int x1904;                 // 0x1904
         int x1908;                 // 0x1908
-        int x190c;                 // 0x190c
+        void *random_sfx_table;    // 0x190c, contains a ptr to an sfx table when requesting a random sfx
         int x1910;                 // 0x1910
         int x1914;                 // 0x1914
         int x1918;                 // 0x1918
@@ -2460,7 +2265,7 @@ struct FighterData
     u16 atk_instance;                     // 0x2088, Contains an ID unique to the current move instance. e.g, if two dairs are done back to back, this ID will differ to tell them apart from each other. It is stored to 0x18EC of the victim upon colliding with someone.
     int x208c;                            // 0x208c
     int x2090;                            // 0x2090
-    int x2094;                            // 0x2094
+    GOBJ *victim;                         // 0x2094
     int x2098;                            // 0x2098
     int x209c;                            // 0x209c
     JOBJ *accessory;                      // 0x20a0
@@ -2523,7 +2328,7 @@ struct FighterData
         void (*Coll)(GOBJ *fighter);                 // 0x21a8
         void (*Cam)(GOBJ *fighter);                  // 0x21ac
         void (*Accessory1)(GOBJ *fighter);           // 0x21b0
-        void (*Accessory2)(GOBJ *fighter);           // 0x21b4
+        void (*Accessory_Persist)(GOBJ *fighter);    // 0x21b4, persists across states while the fighter is alive, death clears this ptr, so re-init on Respawn cb
         void (*Accessory_Freeze)(GOBJ *fighter);     // 0x21b8, only runs during hitlag
         void (*Accessory4)(GOBJ *fighter);           // 0x21bc
         void (*OnGiveDamage)(GOBJ *fighter);         // 0x21c0
@@ -2592,7 +2397,7 @@ struct FighterData
         unsigned char absorb_unk : 1;            // 0x1 - x2218
         unsigned char persistent_gfx : 1;        // 0x80 is shielding bool. 0x80 - 0x2219
         unsigned char immune : 1;                // 0x40 - 0x2219
-        unsigned char x2219_3 : 1;               // 0x20 - 0x2219
+        unsigned char is_ignore_death : 1;       // 0x20 - 0x2219
         unsigned char hitbox_active : 1;         // 0x10 - 0x2219
         unsigned char x2219_5 : 1;               // 0x8 - 0x2219
         unsigned char freeze : 1;                // 0x4 - 0x2219
@@ -2646,7 +2451,7 @@ struct FighterData
         unsigned char x221f_6 : 1;
         unsigned char x221f_7 : 1;
         unsigned char x221f_8 : 1;
-        char flags_2220;                          // 0x2220
+        char can_input_multijump;                 // 0x2220
         char flags_2221;                          // 0x2221
         unsigned char x2222_1 : 1;                // 0x80 - 0x2222
         unsigned char is_multijump : 1;           // 0x40 - 0x2222
@@ -2763,89 +2568,103 @@ struct FighterData
         int ft_var51;                             // 0x22f4
         int ft_var52;                             // 0x22f8
     } fighter_var;
-    int x22fc;           // 0x22fc
-    int x2300;           // 0x2300
-    int x2304;           // 0x2304
-    int x2308;           // 0x2308
-    int x230c;           // 0x230c
-    int x2310;           // 0x2310
-    int x2314;           // 0x2314
-    int x2318;           // 0x2318
-    int x231c;           // 0x231c
-    int x2320;           // 0x2320
-    int stage_internal;  // 0x2324 so stupid, used for decrementing hazard immunity
-    int x2328;           // 0x2328
-    int x232c;           // 0x232c
-    int x2330;           // 0x2330
-    int x2334;           // 0x2334
-    int x2338;           // 0x2338
-    int x233c;           // 0x233c
-    struct state_var     // 0x2340
-    {                    //
-        int state_var1;  // 0x2340
-        int state_var2;  // 0x2344
-        int state_var3;  // 0x2348
-        int state_var4;  // 0x234c
-        int state_var5;  // 0x2350
-        int state_var6;  // 0x2354
-        int state_var7;  // 0x2358
-        int state_var8;  // 0x235c
-        int state_var9;  // 0x2360
-        int state_var10; // 0x2364
-        int state_var11; // 0x2368
-        int state_var12; // 0x236c
-        int state_var13; // 0x2370
-        int state_var14; // 0x2374
-        int state_var15; // 0x2378
-        int state_var16; // 0x237c
-        int state_var17; // 0x2380
-        int state_var18; // 0x2384
-    } state_var;         //
-    int x2388;           // 0x2388
-    int x238c;           // 0x238c
-    int x2390;           // 0x2390
-    int x2394;           // 0x2394
-    int x2398;           // 0x2398
-    int x239c;           // 0x239c
-    int x23a0;           // 0x23a0
-    int x23a4;           // 0x23a4
-    int x23a8;           // 0x23a8
-    int x23ac;           // 0x23ac
-    int x23b0;           // 0x23b0
-    int x23b4;           // 0x23b4
-    int x23b8;           // 0x23b8
-    int x23bc;           // 0x23bc
-    int x23c0;           // 0x23c0
-    int x23c4;           // 0x23c4
-    int x23c8;           // 0x23c8
-    int x23cc;           // 0x23cc
-    int x23d0;           // 0x23d0
-    int x23d4;           // 0x23d4
-    int x23d8;           // 0x23d8
-    int x23dc;           // 0x23dc
-    int x23e0;           // 0x23e0
-    int x23e4;           // 0x23e4
-    int x23e8;           // 0x23e8
-    struct MEX
-    {
-        int anim_owner;
-        GOBJ *kb_abilitysource;
-        u8 ucf_stick_x[3];
-    } MEX;
-    struct TM
-    {
-        s16 state_frame;        // how many frames the player has been in this state
-        s16 state_frame_hitlag; // how many frames the player has been in this state, counting hitlag
-        s16 shield_frame;       // how many frames the player has been shielding
-        u16 state_prev[6];
-        u16 state_prev_frames[6];
-        u16 last_move_hurt;        // Previous Move Instance Hit By
-        u16 vuln_frames;           // how many frames the fighter has been vulnerable
+    int x22fc;                     // 0x22fc
+    int x2300;                     // 0x2300
+    int x2304;                     // 0x2304
+    int x2308;                     // 0x2308
+    int x230c;                     // 0x230c
+    int x2310;                     // 0x2310
+    int x2314;                     // 0x2314
+    int x2318;                     // 0x2318
+    int x231c;                     // 0x231c
+    int x2320;                     // 0x2320
+    int stage_internal;            // 0x2324 so stupid, used for decrementing hazard immunity
+    int x2328;                     // 0x2328
+    int x232c;                     // 0x232c
+    int x2330;                     // 0x2330
+    int x2334;                     // 0x2334
+    int x2338;                     // 0x2338
+    int x233c;                     // 0x233c
+    struct state_var               // 0x2340
+    {                              //
+        int state_var1;            // 0x2340
+        int state_var2;            // 0x2344
+        int state_var3;            // 0x2348
+        int state_var4;            // 0x234c
+        int state_var5;            // 0x2350
+        int state_var6;            // 0x2354
+        int state_var7;            // 0x2358
+        int state_var8;            // 0x235c
+        int state_var9;            // 0x2360
+        int state_var10;           // 0x2364
+        int state_var11;           // 0x2368
+        int state_var12;           // 0x236c
+        int state_var13;           // 0x2370
+        int state_var14;           // 0x2374
+        int state_var15;           // 0x2378
+        int state_var16;           // 0x237c
+        int state_var17;           // 0x2380
+        int state_var18;           // 0x2384
+    } state_var;                   //
+    int x2388;                     // 0x2388
+    int x238c;                     // 0x238c
+    int x2390;                     // 0x2390
+    int x2394;                     // 0x2394
+    int x2398;                     // 0x2398
+    int x239c;                     // 0x239c
+    int x23a0;                     // 0x23a0
+    int x23a4;                     // 0x23a4
+    int x23a8;                     // 0x23a8
+    int x23ac;                     // 0x23ac
+    int x23b0;                     // 0x23b0
+    int x23b4;                     // 0x23b4
+    int x23b8;                     // 0x23b8
+    int x23bc;                     // 0x23bc
+    int x23c0;                     // 0x23c0
+    int x23c4;                     // 0x23c4
+    int x23c8;                     // 0x23c8
+    int x23cc;                     // 0x23cc
+    int x23d0;                     // 0x23d0
+    int x23d4;                     // 0x23d4
+    int x23d8;                     // 0x23d8
+    int x23dc;                     // 0x23dc
+    int x23e0;                     // 0x23e0
+    int x23e4;                     // 0x23e4
+    int x23e8;                     // 0x23e8
+    struct MEX                     // 0x23ec
+    {                              //
+        int anim_owner;            // 0x23ec
+        u8 ucf_stick_x[3];         // 0x23f0
+        int costume_num;           // 0x23f4, number of mexCostumes active
+        void **costumes;           // 0x23f8, pointer to mexCostume lookup table
+    } MEX;                         //
+    struct TM                      // 0x23fc
+    {                              //
+        s16 state_frame;           // 0x23fc, how many frames the player has been in this state
+        s16 state_frame_hitlag;    // 0x23fe, how many frames the player has been in this state, counting hitlag
+        s16 shield_frame;          // 0x2400, how many frames the player has been shielding
+        u16 state_prev[6];         // 0x2402,
+        u16 state_prev_frames[6];  // 0x2408,
+        u16 last_move_hurt;        // 0x240e, Previous Move Instance Hit By
+        u16 vuln_frames;           // 0x2410, how many frames the fighter has been vulnerable
         u16 can_fastfall_frames;   // how many frames the fighter has been able to fast fall
         int post_hitstun_frames;   // frames fighter has been out of hitstun
         GOBJ *fighter_hurt_shield; // pointer to the fighter who's shield this fighter hit
         void *cb_anim;             // additional animation callback
     } TM;
+};
+
+struct FtMultiJumpDesc // exists in fighters special attributes
+{
+    int turn_frames;                    // turn frame length
+    float turn_stick_x_min;             // min x value on left stick to trigger aerial turn
+    float vel_stick_x_mult;             // jump x velocity = left stick x * this
+    float aerial_drift_stick_mult_mult; // 0xC, multipler for the value in the fighter attribute
+    float aerial_drift_max_mult;        // 0x10, multipler for the value in the fighter attribute
+    float jump_vel_y[5];                // 0x14 subsequemt jumps Y velocities
+    int jump_num;                       // 0x28, number of total aerial jumps
+    int jump_state_start;               // 0x2C, state index for first aerial jump
+    int x30;                            // 0x30,
 };
 
 struct FtParts // is in the fighter data
@@ -2895,7 +2714,7 @@ struct FtSymbols
     void *x8;            // 0x8
     void *xc;            // 0xc
     void *x10;           // 0x10
-    ArchiveInfo *costume // 0x14
+    HSD_Archive *costume // 0x14
 };
 
 /** State Structs **/
@@ -2935,12 +2754,15 @@ void Fighter_EnterDamageFall(GOBJ *fighter);
 void Fighter_EnterWait(GOBJ *fighter);
 void Fighter_EnterAirCatch(GOBJ *fighter);
 void Fighter_EnterFall(GOBJ *fighter);
-void Fighter_EnterSpecialFall(GOBJ *fighter, int can_fastfall, int can_not_noimpactland, int can_not_interrupt, float aerialDriftMultipler, float landing_frames);
+void Fighter_EnterFallAerial(GOBJ *fighter);
+void Fighter_EnterSpecialFall(GOBJ *fighter, int can_fastfall, int no_soft_landing, int can_interrupt_landing, float air_drift_multiplier, float landing_frames);
 void Fighter_EnterLanding(GOBJ *fighter);
 void Fighter_EnterSpecialLanding(GOBJ *fighter, int unk, float state_length);
 void Fighter_EnterSleep(GOBJ *fighter, int ms);
 void Fighter_EnterEntry(GOBJ *fighter);
 void Fighter_EnterDownBound(GOBJ *f);
+void Fighter_EnterJumpAerial(GOBJ *f);
+void Fighter_EnterDeadUp(GOBJ *f);
 int Fighter_CheckNearbyLedges(GOBJ *fighter);
 int Fighter_CheckForOtherFighterOnLedge(GOBJ *fighter);
 void Fighter_EnterCliffCatch(GOBJ *fighter);
@@ -2955,12 +2777,20 @@ GOBJ *Fighter_GetSubcharGObj(int ply, int ms);
 Playerblock *Fighter_GetPlayerblock(int ply);
 void Fighter_SetSlotType(int ply, int slot);
 int Fighter_GetControllerPort(int ply);
+int Fighter_GetTeam(int ply);
 int *Fighter_GetStaleMoveTable(int ply);
+void Fighter_SetInitialPosition(int ply, Vec3 *pos);
 void Fighter_SetPosition(int ply, int ms, Vec3 *pos);
+void Fighter_GetPosition(int ply, Vec3 *pos);
+void Fighter_SetDirection(int ply, float dir);
+float Fighter_GetDirection(int ply);
 void Fighter_ApplyIntang(GOBJ *fighter, int duration);
 int Fighter_GetSlotType(int index); // returns 0x0 for HMN, 0x1 for CPU, 0x2 for Demo, 0x3 for not present
 int Fighter_GetStocks(int ply);
 void Fighter_SetStocks(int ply, int stocks);
+void Fighter_LoseStock(int ply);
+void Fighter_DeathLogic(GOBJ *f);
+void Fighter_RunOnDeathCallbacks(GOBJ *f);
 int Fighter_GetStaminaHP(int ply);
 void Fighter_SetStaminaHP(int ply, int hp);
 int Fighter_CheckStaminaMode(int ply);
@@ -2979,8 +2809,9 @@ void Fighter_EnterMiscPassState(float start_frame, GOBJ *fighter, int state, int
 int Fighter_CollGround_PassLedge(GOBJ *fighter);
 int Fighter_CollGround_StopLedge(GOBJ *fighter); // returns is_grounded
 void Fighter_CollGround_StopLedge_EnterFall(GOBJ *fighter);
-int Fighter_CollAir_GrabLedgeWalljump(GOBJ *fighter, void *perFrame, void *onLand);
-int Fighter_CollAir_GrabLedge(GOBJ *fighter, int grab_direction);
+int Fighter_CollAir_GrabFacingLedgeWalljump(GOBJ *fighter, void *perFrame, void *onLand); // this will handle entering cliffcatch / walljump. all in one collision func
+int Fighter_CollAir_GrabBothLedgesWalljump(GOBJ *fighter, void *onLand);                  // this will handle entering cliffcatch / walljump. all in one collision func
+int Fighter_CollAir_CheckLedge(GOBJ *fighter, int grab_direction);                        // this will only check for ledges, you still need to call the cliffcatch/walljump IASA function after
 void Fighter_CollAir_IgnoreLedge(GOBJ *fighter, void *callback);
 int Fighter_CollAir_IgnoreLedge_NoCB(GOBJ *fighter);
 int Fighter_CollAir_SoftLanding(GOBJ *fighter);
@@ -2993,9 +2824,11 @@ int Fighter_IASACheck_JumpAerial(GOBJ *fighter);
 int Fighter_IASACheck_JumpF(GOBJ *fighter);
 int Fighter_IASACheck_PassConditions(GOBJ *fighter);
 int Fighter_IASACheck_Turn(GOBJ *fighter);
+int Fighter_IASACheck_AllGrounded(GOBJ *fighter);
+int Fighter_IASACheck_AllAerial(GOBJ *fighter);
 void Fighter_PhysGround_ApplyFriction(GOBJ *fighter);
 void Fighter_PhysGround_ApplyCustomFriction(FighterData *fighter, float friction);
-void Fighter_PhysGround_UnkFriction(GOBJ *fighter);
+void Fighter_PhysGround_ApplyVelocity(GOBJ *fighter);
 void Fighter_PhysAir_CheckFastfall(FighterData *fighter);
 void Fighter_PhysAir_ApplyGravityDecayX(GOBJ *);
 void Fighter_PhysAir_ApplyGravityFastfall(GOBJ *);
@@ -3006,8 +2839,8 @@ void Fighter_PhysAir_SetAerialDrift(FighterData *fp, float curr_x_vel, float thi
 void Fighter_PhysAir_DecayXVelocity(FighterData *fighter, float aerial_friction);
 void Fighter_PhysAir_LimitXVelocity(FighterData *fighter);
 void Fighter_Phys_UseAnimYVelocity(GOBJ *fighter);
-void Fighter_Phys_UseAnimPos(FighterData *fighter);
-void Fighter_Phys_UseAnimPosAndStick(FighterData *fighter);
+void Fighter_Phys_UseAnimPos(GOBJ *fighter);
+void Fighter_Phys_UseAnimPosAndStick(GOBJ *fighter);
 void Fighter_SetGrounded(FighterData *fighter);
 void Fighter_SetGrounded2(FighterData *fighter);
 void Fighter_SetAirborne(FighterData *fighter);
@@ -3023,6 +2856,7 @@ float Fighter_GetBoneRotY(FighterData *fighter, int bone);
 void Fighter_SetBoneRotX(FighterData *fighter, int bone, float angle);
 void Fighter_SetBoneRotY(FighterData *fighter, int bone, float angle);
 void Fighter_SetBoneRotZ(FighterData *fighter, int bone, float angle);
+void Fighter_PlayPositionalSFX(FighterData *fp, int sfxID, int volume, int balance);
 void Fighter_PlayVoiceSFX(FighterData *fighter, int sfxID, int volume, int balance);
 void Fighter_PlayVoiceSFX2(FighterData *fighter, int sfxID, int volume, int balance);
 void Fighter_ApplyColAnim(FighterData *fighter_data, int overlay, int unk);
@@ -3040,6 +2874,7 @@ float Fighter_GetBaseScale(FighterData *fighter);
 void Fighter_SetScale(GOBJ *fighter, float scale);
 void Fighter_InitDynamics(FighterData *fighter_data);
 void Fighter_ProcDynamics(GOBJ *fighter);
+void Fighter_CheckToEnableDynamics(FighterData *fp, u16 *dynamics_data);
 float Fighter_GetKnockbackAngle(FighterData *fighter_data);
 void Fighter_UpdateCameraBox(GOBJ *fighter);
 void Fighter_SetAllHurtboxesNotUpdated(GOBJ *fighter);
@@ -3068,7 +2903,7 @@ int Hitbox_CheckIfPreviouslyHit(void *victim_data, ftHit *hitbox);
 void Hitbox_SetAsPreviouslyHit(ftHit *hitbox, int unk, void *victim_data);
 void Hitbox_DisableAll(GOBJ *fighter);
 int Fighter_CountPlayers();
-void Fighter_InitData();
+void Fighter_InitData(GOBJ *f);
 void Fighter_InitInputs(GOBJ *fighter);
 void Fighter_BreakGrabUnk(GOBJ *victim);
 void Fighter_BreakGrab(GOBJ *fighter, GOBJ *victim);
@@ -3123,4 +2958,24 @@ int Fighter_CheckGrabBreakout(FighterData *fp, float mash_amt); // returns 1 if 
 void Fighter_SetAnimRate(GOBJ *f, float rate);
 int Fighter_CheckJumpInput(GOBJ *f);
 void Fighter_SetEyeTexture(GOBJ *f, int material_index, float frame);
+void Fighter_GetECBCenter(GOBJ *f, Vec3 *center_pos);
+void Fighter_ApplyPartAnim(GOBJ *f, int part_id, int anim_id);
+void Fighter_SetHoldKind(GOBJ *f, int r4, int r5);
+void Fighter_ApplyHandAnim(GOBJ *f, int r4);
+void Fighter_CheckToRespawn(int ply, int ms);
+void Fighter_Respawn(GOBJ *f, int ms);
+void Fighter_CreateAbsorb(GOBJ *fighter_gobj, AbsorbDesc *absorb_desc);
+void Fighter_EnableAbsorbUpdate(GOBJ *fighter_gobj);
+void Fighter_PlaySFX(GOBJ *fighter_gobj, int sfxid, int volume, int pitch);
+void Fighter_EnterFallOrWait(GOBJ *fighter_gobj);
+void Fighter_EnterTech(GOBJ *gobj);
+void Fighter_EnterSpecialFallLoseJumps(GOBJ *fighter_gobj, int can_fastfall, int can_not_noimpactland, int can_not_interrupt, float aerial_drift_mult, float landing_lag);
+void Fighter_RumbleController(FighterData *fighter_gobj, int unk1, int unk2);
+void Fighter_GetLeftStick(GOBJ *fighter_gobj, float *stick_x, float *stick_y);
+void Fighter_ClampMaxAirDrift(FighterData *fighter_gobj);
+void Fighter_UpdateHitboxDamage(ftHit *hit, int dmg, GOBJ *f);
+void GXLink_Fighter(GOBJ *f, int pass);
+void Fighter_MultiJump_TurnThink(FighterData *fp, int turn_frames);
+int Fighter_CheckFootstool(GOBJ *f);
+float Fighter_GetSoftLandVelocity(FighterData *fp);
 #endif

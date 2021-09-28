@@ -4,6 +4,7 @@
 #include "structs.h"
 #include "datatypes.h"
 #include "obj.h"
+#include "gx.h"
 #include "color.h"
 
 // Item IDs
@@ -259,7 +260,7 @@ typedef struct itPublicData
 
 struct itData
 {
-    float *param;         // 0x00
+    itCommonAttr *param;  // 0x00
     float *param_ext;     // 0x04
     void *hurtboxes;      // 0x08
     void *states;         // 0x0C
@@ -270,7 +271,8 @@ struct itData
 struct itCommonAttr
 {
     char is_heavy : 1;          // 0x0, bit 0x80, is heavy item (crate)
-    char hold_kind : 7;         // defines hand hold behavior
+    char x0_78 : 4;             // unk
+    char hold_kind : 3;         // defines hand hold behavior
     unsigned char x1_1 : 1;     // 0x1 0x80
     unsigned char x1_2 : 1;     // 0x1 0x40
     unsigned char x1_3 : 1;     // 0x1 0x20
@@ -280,44 +282,43 @@ struct itCommonAttr
     unsigned char x1_8 : 1;     // 0x1 0x01    char flags3; //0x2
     char flags4;                //0x3
     float throw_speed_mult;     // 0x4, speed multiplier at which this item is thrown at
-    int x8;
-    float spin_speed;
-    float fall_speed;     // 0x10
-    float fall_speed_max; // 0x14
-    float x18;
-    float x1C;       //collision related
-    int x20;         // 0x20
-    int x24;         // 0x24
-    int x28;         // 0x28
-    int x2c;         // 0x2c
-    int x30;         // 0x30
-    int x34;         // 0x34
-    int x38;         // 0x38
-    int x3c;         // 0x3c
-    float ecb_top;   // 0x40
-    float ecb_bot;   // 0x44
-    float ecb_right; // 0x48
-    float ecb_left;  // 0x4c
-    int x50;         // 0x50
-    int x54;         // 0x54
-    int x58;         // 0x58
-    int x5c;         // 0x5c
-    float scale;     // 0x60, does not affect hitboxes
-    int destroy_gfx; // 0x64, ID of a gfx to play on destroy
-    int x68;         // 0x68
-    int x6c;         // 0x6c
-    int x70;         // 0x70
-    int x74;         // 0x74
-    int destroy_sfx; // 0x78
-    int x7c;         // 0x7c
-    int x80;         // 0x80
-    int x84;         // 0x84
-    int x88;         // 0x88
-    int x8c;         // 0x8c
-    int x90;         // 0x90
-    int x94;         // 0x94
-    int x98;         // 0x98
-    int x9c;         // 0x9c
+    int x8;                     //
+    float spin_speed;           //
+    float fall_speed;           // 0x10
+    float fall_speed_max;       // 0x14
+    float x18;                  //
+    float dmg_mult;             // collision related? referenced on taking damage @ 80270f90
+    int x20;                    // 0x20
+    int x24;                    // 0x24
+    int x28;                    // 0x28
+    int x2c;                    // 0x2c
+    int x30;                    // 0x30
+    float x34;                  // 0x34
+    Vec2 grab_range;            // 0x38
+    float ecb_top;              // 0x40
+    float ecb_bot;              // 0x44
+    float ecb_right;            // 0x48
+    float ecb_left;             // 0x4c
+    int x50;                    // 0x50
+    int x54;                    // 0x54
+    int x58;                    // 0x58
+    int x5c;                    // 0x5c
+    float scale;                // 0x60, does not affect hitboxes
+    int destroy_gfx;            // 0x64, ID of a gfx to play on destroy
+    int x68;                    // 0x68
+    int x6c;                    // 0x6c
+    int x70;                    // 0x70
+    int x74;                    // 0x74
+    int destroy_sfx;            // 0x78
+    int x7c;                    // 0x7c
+    int x80;                    // 0x80
+    int x84;                    // 0x84
+    int x88;                    // 0x88
+    int x8c;                    // 0x8c
+    int x90;                    // 0x90
+    int x94;                    // 0x94
+    int x98;                    // 0x98
+    int x9c;                    // 0x9c
 };
 
 struct ItemState
@@ -441,7 +442,7 @@ struct ItemData
     int x14;                                            // 0x14
     int x18;                                            // 0x18
     int x1c;                                            // 0x1c
-    int x20;                                            // 0x20
+    u8 team_id;                                         // 0x20
     int state;                                          // 0x24
     int x28;                                            // 0x28
     float facing_direction;                             // 0x2c
@@ -471,7 +472,7 @@ struct ItemData
     int xb4;                                            // 0xb4
     void *it_cb;                                        // 0xb8, global item callbacks
     ItemState *item_states;                             // 0xbc
-    int isRotate;                                       // 0xc0, also air state?? 802e4ff4 octorock
+    int air_state;                                      // 0xc0, also air state?? 802e4ff4 octorock
     itData *itData;                                     // 0xc4
     JOBJ *joint;                                        // 0xc8
     itCommonAttr *common_attr;                          // 0xcc
@@ -656,15 +657,15 @@ struct ItemData
     int xda4;                                           // 0xda4
     char xda8;                                          // 0xda8
     char xda9;                                          // 0xda8
-    unsigned char xdaa1 : 1;                            // 0xda8 0x80
-    unsigned char xdaa2 : 1;                            // 0xda8 0x40
-    unsigned char xdaa3 : 1;                            // 0xda8 0x20
-    unsigned char xdaa4 : 1;                            // 0xda8 0x10
-    unsigned char xdaa5 : 1;                            // 0xda8 0x08
-    unsigned char xdaa6 : 1;                            // 0xda8 0x04
-    unsigned char xdaa7 : 1;                            // 0xda8 0x02
-    unsigned char visible : 1;                          // 0xda8 0x01
-    char xdab;                                          // 0xda8
+    unsigned char xdaa1 : 1;                            // 0x80 - 0xda8
+    unsigned char show_center_sphere : 1;               // 0x40 - 0xda8
+    unsigned char show_item_pickup : 1;                 // 0x20 - 0xda8
+    unsigned char show_footstool : 1;                   // 0x10 - 0xda8
+    unsigned char xda8_x8 : 1;                          // 0x8 - 0xda8
+    unsigned char show_dynamics : 1;                    // 0x4 - 0xda8
+    unsigned char show_hit : 1;                         // 0x2 - 0xda8
+    unsigned char show_model : 1;                       // 0x1 - 0xda8
+    char xdab;                                          // 0xdab
     struct                                              //
     {                                                   //
         int flag1;                                      // 0xdac
@@ -677,8 +678,10 @@ struct ItemData
     int xdc4;                                           // 0xdc4
     u8 xdc8 : 8;                                        // 0xdc8
     u8 xdc9_1 : 1;                                      // 0xdc9, 0x80
-    u8 hitlag : 1;                                      // 0xdc9, 0x40
-    u8 xdc9_3 : 6;                                      // 0xdc9, 0x3F
+    u8 is_hitlag : 1;                                   // 0xdc9, 0x40
+    u8 freeze : 1;                                      // 0xdc9, 0x20
+    u8 xdc9_10 : 1;                                     // 0xdc9, 0x10
+    u8 xdc9_f : 4;                                      // 0xdc9, 0xF
     u16 xdca1 : 1;                                      // 0xdca 0x80
     u16 xdca2 : 1;                                      // 0xdca 0x40
     u16 xdca3 : 1;                                      // 0xdca 0x20
@@ -721,7 +724,7 @@ struct ItemData
     unsigned char xdcf6 : 1;                            // 0xdcf, 0x04
     unsigned char xdcf7 : 1;                            // 0xdcf, 0x02
     unsigned char xdcf8 : 1;                            // 0xdcf, 0x01
-    unsigned char can_jumped_on : 1;                    // 0xdd0, 0x80
+    unsigned char is_footstool : 1;                     // 0xdd0, 0x80
     unsigned char xdd0_x40 : 1;                         // 0xdd0, 0x40
     unsigned char xdd0_x20 : 1;                         // 0xdd0, 0x20
     unsigned char xdd0_x10 : 1;                         // 0xdd0, 0x10
@@ -857,6 +860,10 @@ struct ItemData
         int xfc0;                                       // 0xfc0
         int xfc4;                                       // 0xfc4
         int xfc8;                                       // 0xfc8
+        struct                                          //
+        {                                               //
+            GOBJ *fighter_orig;                         // 0xfcc
+        } MEX;                                          //
     } item_var;                                         //
 };
 
@@ -914,4 +921,13 @@ JOBJ *Item_GetHeldBone(GOBJ *item);
 void Item_BounceOffVictim(GOBJ *item);
 void Item_BounceOffShield(GOBJ *item);
 int Item_GenerateHitExceptionID();
+int Item_CheckHeavy(GOBJ *item);
+void Item_SetUngrabbable(GOBJ *item);
+void Item_SetJobjHidden(GOBJ *item);
+void Item_SetHitboxDamage(itHit *hitbox, int damage, GOBJ *item);
+void Item_RemoveAllHitboxes(GOBJ *item);
+void Item_ClearVelocity(GOBJ *item);
+void Item_UpdateECBTopN(GOBJ *item);
+int Item_GetWallCollFlags(GOBJ *item);
+void Item_UpdateHitboxDamage(itHit *hit, int dmg, GOBJ *item);
 #endif

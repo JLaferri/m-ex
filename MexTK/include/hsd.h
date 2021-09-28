@@ -4,7 +4,7 @@
 #include "structs.h"
 #include "datatypes.h"
 #include "obj.h"
-#include "color.h"
+#include "gx.h"
 
 // button bits
 #define PAD_BUTTON_DPAD_LEFT 0x1
@@ -40,6 +40,15 @@
 #define HSD_BUTTON_DOWN 0x20000
 #define HSD_BUTTON_LEFT 0x40000
 #define HSD_BUTTON_RIGHT 0x80000
+
+enum DebugLevel
+{
+    DB_MASTER,        // off
+    DB_NO_DEBUG_ROM,  //
+    DB_DEBUG_DEVELOP, //
+    DB_DEBUG_ROM,     //
+    DB_DEVELOP,       //
+};
 
 /*** Structs ***/
 
@@ -154,11 +163,36 @@ struct HSD_VI
     int is_prog;
 };
 
+struct HSD_Archive
+{
+    int file_size;       // size of file
+    int *reloc_offset;   // pointer to relocation table offset?
+    int reloc_num;       // number of entries on the rleoc table
+    int symbol_num;      // total number of symbols
+    int refsymbol_num;   // number of reference symbols
+    int archive_vers;    // idk for sure sometimes 001B
+    int unk1;            //
+    int unk2;            //
+    int *general_points; //0x20 = pointer to the "general points"
+    int *reloc_table;    //pointer to relocation table in memory
+    int *symbols1;       //pointer to symbol pointers and name offsets
+    int *refsymmbols;    //pointer to reference symbol info in memory
+    int *symbols2;       //pointer to symbol list in memory
+    int *file_start;     //pointer to the header of the dat
+};
+
 /*** Static Variables ***/
 HSD_VI *stc_HSD_VI = 0x8046b0f0;
 
 /*** Functions ***/
 
+HSD_Archive *Archive_LoadFile(char *filename);
+void Archive_LoadInitReturnSymbol(char *filename, void *ptr, ...);                        // input each symbol name pointer sequentially and terminate with 0;
+void Archive_GetSections(HSD_Archive *archive, void *symbol_out, char *symbol_name, ...); // input each symbol name sequentially and terminate with 0;
+void *Archive_GetPublicAddress(HSD_Archive *archive, char *symbol);
+void Archive_Free(HSD_Archive *archive);
+HSD_Archive *File_GetPreloadedFile(char *filename);
+void File_LoadSync(char *filename, void *alloc, int *out_size);
 int HSD_Randi(int max);
 float HSD_Randf();
 void *HSD_MemAlloc(int size);
@@ -171,6 +205,9 @@ void HSD_StartRender(int unk);
 void HSD_SetSpeed(u64 speed);
 void HSD_SetSpeedEasy(float mult);
 void HSD_StateInvalidate(int flags);
+void HSD_StateInitTev();
+void HSD_StateInitDirect(GXVtxFmt vtxfmt, int render_flags);
+void HSD_ClearVtxDesc();
 void GX_AllocImageData(_HSD_ImageDesc *image_desc, int width, int height, int fmt, int size); // image data buffer is stored to the image_desc
 void GXTexModeSync();
 void GXPixModeSync();
@@ -178,4 +215,6 @@ void GXInvalidateTexAll();
 u64 Pad_GetDown(int pad);
 u64 Pad_GetRapidHeld(int pad);
 u64 Pad_GetHeld(int pad);
+void Pad_Rumble(int pad, int unk, int strength, int duration); // make unk = 0
+void Pad_RumbleStopAll();
 #endif

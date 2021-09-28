@@ -5,7 +5,7 @@
 #include "datatypes.h"
 #include "obj.h"
 #include "fighter.h"
-#include "color.h"
+#include "gx.h"
 
 // Match Data definitions
 #define MATCH_TIMER_FROZEN 0
@@ -79,7 +79,7 @@ struct MatchInit
     unsigned char unk11 : 1;             // 0x80
     unsigned char isCheckStockSteal : 1; // 0x40
     unsigned char isRunStockLogic : 1;   // 0x20
-    unsigned char unk10 : 5;             // 0x01
+    unsigned char unk1f : 5;             // 0x1f
     //byte 0x5
     unsigned char no_check_end : 1;        // 0x80
     unsigned char isSkipUnkStockCheck : 1; // 0x40
@@ -90,7 +90,7 @@ struct MatchInit
     //byte 0x7
     u8 unk13; // 0xFF
     //byte 0x8
-    u8 isTeams; // 0xFF
+    u8 is_teams; // 0xFF
     //byte 0x9
     u8 use_ko_count; // 0xFF
     //byte 0xA
@@ -148,7 +148,8 @@ struct MatchInit
     int x60;
     //0x64
     int x64;
-*/
+    */
+
     // player data
     PlayerData playerData[6];
 };
@@ -468,6 +469,29 @@ struct MatchOffscreen
     unsigned char ignore_offscreen : 1; // 0xC, 0x40
     unsigned char x3f : 6;              // 0xC, 0x3f
     void *x10;
+};
+
+struct ExclamData
+{
+    GOBJ *gobj;           // 0x0
+    int x4;               // 0x4
+    int x8;               // 0x8
+    int sfx;              // 0xc, -1 for none
+    u8 x10;               // 0x10
+    u8 x11;               // 0x11
+    u8 is_play_sfx12 : 1; // 0x12, 0x80, flags
+    u8 is_play_sfx3 : 1;  // 0x12, 0x40 flags
+    u8 is_exec_func1 : 1; // 0x12, 0x20, flags
+    u8 x12_x10 : 1;       // 0x12, flags
+    u8 x12_x08 : 1;       // 0x12, flags
+    u8 x12_x04 : 1;       // 0x12, flags
+    u8 x12_x02 : 1;       // 0x12, flags
+    u8 x12_x01 : 1;       // 0x12, flags
+    int x14;              // 0x14
+    void *on_start;       // 0x18, executes when exclam starts
+    void *on_end;         // 0x1c, executes when exclam ends
+    int sfx2;             // 0x20, -1 for none
+    int sfx3;             // 0x24, -1 for none
 };
 
 struct PlayerStandings
@@ -2721,6 +2745,7 @@ Match *stc_match = 0x8046b6a0;
 MatchCamera *stc_matchcam = 0x80452c68;
 MatchHUD *stc_matchhud = 0x804a10c8;
 MatchOffscreen *stc_match_offscreen = 0x804a1df0;
+ExclamData *stc_exclam_data = 0x803f9628; // 8 of these
 
 /*** Functions ***/
 
@@ -2737,6 +2762,7 @@ void Match_EndVS();
 void Match_FadeScreen(int time);
 int Match_CheckIfTeams();
 int Match_CheckIfStock();
+int Match_CheckIfFriendlyFire();
 void Match_SetPostMatchSFX(int sfx);
 void Match_FreezeGame(int freeze_kind);
 void Match_UnfreezeGame(int freeze_kind);
@@ -2759,8 +2785,11 @@ void DevCam_AdjustZoom(COBJ *cobj, float stickY);
 void ScreenFlash_Create(int kind, int unk);
 void ScreenRumble_Execute(int kind, Vec3 *pos);
 void Match_StoreGoCallback(GOBJ *gobj, void *cb);
+void Match_CreateExclamation(int exclam, int is_play_sfx, int sfx, int r6, void *cb, void *cb2);
 void Match_AdjustSoundOnPause(int is_pause);
 Vec3 *Match_GetPlayerHUDPos(int ply);
 COBJ *Match_GetCObj();
 float Match_GetDamageRatio();
+void Match_CreateGOExclamation();
+void Match_EnableFighterInputs();
 #endif

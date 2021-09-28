@@ -18,9 +18,17 @@ enum MEX_GETDATA
     MXDT_GRICONNUM,
     MXDT_GRICONDATA,
     MXDT_FTCOSTUMEARCHIVE,
-    MXDT_GRDESC,
-    MXDT_GREXTLOOKUP,
+    MXDT_GRDESC,      // gets GrDesc struct
+    MXDT_GREXTLOOKUP, // gets first stage external ID from internal ID
+    MXDT_GRNAME,      // returns stage name char*
+    MXDT_FTNAME,      // returns fighter name char*, indexed by external ID
 };
+
+typedef enum SSMKind
+{
+    SSMKIND_CHAR,
+    SSMKIND_STAGE,
+} SSMKind;
 
 /*** Structs ***/
 
@@ -42,15 +50,14 @@ struct MEXPlaylist
 };
 
 /*** Functions ***/
-ArchiveInfo *MEX_LoadRelArchive(char *file, void *functions, char *symbol);
+HSD_Archive *MEX_LoadRelArchive(char *file, void *functions, char *symbol);
 void MEX_IndexFighterItem(int fighter_kind, void *itemdata, int item_id);
 void SpawnMEXEffect(int effectID, int fighter, int arg1, int arg2, int arg3, int arg4, int arg5);
-int MEX_GetFtItemID(GOBJ *f, int item_id); // gobj can be fighter or stage
-int MEX_GetGrItemID(int item_id);          // gobj can be fighter or stage
+int MEX_GetFtItemID(GOBJ *f, int item_id);    // gobj can be fighter or stage
+int MEX_GetGrItemID(int item_id);             // gobj can be fighter or stage
+int MEX_GetSSMID(SSMKind ssm_kind, int kind); // ssm_kind, 0 = fighter, 1 = stage | kind is the c_kind / gr_kind
 void SFX_PlayStageSFX(int sfx_id);
 void *calloc(int size);
-PRIM *PRIM_NEW(int vert_count, int params1, int params2);
-void PRIM_CLOSE();
 MEXPlaylist *MEX_GetPlaylist();
 //void KirbyStateChange(GOBJ *fighter, int state, float startFrame, float animSpeed, float animBlend);
 void KirbyStateChange(float anim_start_frame, float anim_rate, float anim_blend, GOBJ *f, int state_id, int flags, GOBJ *alt_state_source);

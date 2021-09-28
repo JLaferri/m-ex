@@ -22,7 +22,7 @@ lwz REG_FighterData,0x2C(REG_FighterGObj)
   cmpwi r3,6
   bne ItemSkip
   lwz r3,0x2C(REG_FighterGObj)
-  lwz r3,0x518(r3)
+  lwz r3,MEX_OrigOwner(r3)
   cmpwi r3,0
   beq ItemSkip
   lwz REG_FighterData,0x2C(r3)
@@ -114,7 +114,7 @@ ParseEffMdlLookup:
   lbzx REG_EffectType,r3,REG_EffectIntID
   bl  SkipEffMdlTable
 #*****************************#
-bl  EffMdl_Particle       # will be removed
+#bl  EffMdl_Particle       # will be removed
 bl  EffMdl_DefinePosRot
 bl  EffMdl_UseJointPos
 bl  EffMdl_UseJointPos_GroundOrientation
@@ -195,6 +195,7 @@ bl PtclGen_UseJointPosFtDir
 bl PtclGen_UseJointPos_FtDir_Ground
 bl PtclGen_FollowJointPos
 bl PtclGen_FollowJointPos_FtDir
+bl PtclGen_FollowJointPos_CopyGObjScale
 #*****************************#
 SkipPtclGenTable:
 #Get effect type
@@ -245,6 +246,13 @@ PtclGen_FollowJointPos_FtDir:
   mr   r4,REG_FighterGObj
   lwz	r5, 0x000C (REG_EffectObj)    # jobj
   addi r6,REG_EffectObj,28          # facing direction
+  branchl r12,0x8005fddc
+  b Exit
+
+PtclGen_FollowJointPos_CopyGObjScale:
+  mr   r3,REG_EffectID
+  mr   r4,REG_FighterGObj
+  lwz	r5, 0x000C (REG_EffectObj)    # jobj
   branchl r12,0x8005fddc
   b Exit
 

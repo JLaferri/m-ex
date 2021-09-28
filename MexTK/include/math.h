@@ -4,8 +4,11 @@
 #include "structs.h"
 #include "datatypes.h"
 
+#define HUGE_ENUF 1e+300 // _HUGE_ENUF*_HUGE_ENUF must overflow
+#define INFINITY ((float)(HUGE_ENUF * HUGE_ENUF))
 #define M_PI (3.14159265358979323846)
 #define M_1DEGREE (0.0174533)
+#define M_NAN ((float)(INFINITY * 0.0F))
 
 /*** Functions ***/
 float fmod(float a, float b);
@@ -26,6 +29,7 @@ void VECCrossProduct(Vec3 *a, Vec3 *b, Vec3 *axb);
 float Vec2_Normalize(Vec2 *v);
 float Vec3_Normalize(Vec3 *v);
 void Vec2_Add(Vec2 *a, Vec2 *b);
+Vec3 *Vec3_CrossDirection(Vec3 *a, Vec3 *b, Vec3 *axb);
 //void MTXQuat(Mtx *m, Vec4 *dest);           // quat to matrix
 void HSD_MkRotationMtx(Mtx *dest, Vec4 *v); // quat to rot matrix
 void HSD_MtxGetScale(Mtx *m, Vec3 *dest);

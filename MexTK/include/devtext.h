@@ -2,7 +2,7 @@
 #define MEX_H_DEVTEXT
 
 #include "structs.h"
-#include "color.h"
+#include "gx.h"
 
 /*** Structs ***/
 
@@ -45,8 +45,11 @@ DevText *DevelopText_CreateDataTable(int unk1, int x, int y, int width, int heig
 void DevelopText_Activate(void *unk, DevText *text);
 void DevelopText_AddString(DevText *text, ...);
 void DevelopText_EraseAllText(DevText *text);
+void DevelopText_StoreTextColor(DevText *text, u8 *RGBA);
 void DevelopText_StoreBGColor(DevText *text, u8 *RGBA);
+void DevelopText_ShowText(DevText *text);
 void DevelopText_HideText(DevText *text);
+void DevelopText_ShowBG(DevText *text);
 void DevelopText_HideBG(DevText *text);
 void DevelopText_StoreTextScale(DevText *text, float x, float y);
 void Develop_DrawSphere(float size, Vec3 *pos1, Vec2 *pos2, GXColor *diffuse, GXColor *ambient);

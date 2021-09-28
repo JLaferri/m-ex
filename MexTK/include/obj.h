@@ -3,7 +3,7 @@
 
 #include "structs.h"
 #include "datatypes.h"
-#include "color.h"
+#include "gx.h"
 
 // JObj Flags
 #define JOBJ_SKELETON (1 << 0)
@@ -504,7 +504,7 @@ JOBJ *JOBJ_LoadDummy();
 JOBJ *JOBJ_LoadJoint(JOBJDesc *joint);
 void JOBJ_RemoveAll(JOBJ *joint);
 void JOBJ_Remove(JOBJ *joint);
-void JOBJ_GetChild(JOBJ *joint, int ptr, int index, ...);
+void JOBJ_GetChild(JOBJ *joint, JOBJ **ptr, int index, ...);
 void JOBJ_AddChild(JOBJ *parent, JOBJ *child);
 void JOBJ_AddNext(JOBJ *parent, JOBJ *child);
 float JOBJ_GetCurrentMatAnimFrame(JOBJ *joint);
@@ -513,7 +513,7 @@ void JOBJ_SetFlagsAll(JOBJ *joint, int flags);
 void JOBJ_ClearFlags(JOBJ *joint, int flags);
 void JOBJ_ClearFlagsAll(JOBJ *joint, int flags);
 void JOBJ_BillBoard(JOBJ *joint, Mtx *m, Mtx *mx);
-void JOBJ_RunAObjCallback(JOBJ *joint, int unk, u16 flags, void *cb, int argkind, ...); // flags: 0x400 matanim, 0x20 jointanim, argkind specifies how to pop args off the va_list
+void JOBJ_ForEachAnim(JOBJ *joint, int unk, u16 flags, void *cb, int argkind, ...); // flags: 0x400 matanim, 0x20 jointanim, argkind specifies how to pop args off the va_list
 void JOBJ_Anim(JOBJ *joint);
 void JOBJ_AnimAll(JOBJ *joint);
 void JOBJ_AddAnimAll(JOBJ *joint, void *animjoint, void *matanimjoint, void *shapeanimjoint);
@@ -552,6 +552,7 @@ void CObj_SetViewport(COBJ *cobj, float left, float right, float top, float bott
 void CObj_SetScissor(COBJ *cobj, u16 top, u16 bottom, u16 left, u16 right);
 void CObj_Release(COBJ *cobj);
 void CObj_Destroy(COBJ *cobj);
+COBJ *COBJ_GetCurrent();
 GOBJ *GObj_Create(int type, int subclass, int flags);
 void GObj_Destroy(GOBJ *gobj);
 void GObj_AddGXLink(GOBJ *gobj, void *cb, int gx_link, int gx_pri);
@@ -565,6 +566,7 @@ void GObj_AddUserData(GOBJ *gobj, int userDataKind, void *destructor, void *user
 void GOBJ_InitCamera(GOBJ *gobj, void *cb, int gx_pri);
 void GObj_Anim(GOBJ *gobj);
 void *GObj_AddRenderObject(GOBJ *gobj, int width, int height);
+void GObj_UnkAllProc();
 void GXLink_Common(GOBJ *gobj, int pass);
 int GX_LookupRenderPass(int pass);
 void GXLink_LObj(GOBJ *gobj, int pass);
@@ -573,7 +575,7 @@ void *LObj_LoadDesc(void *lobjdesc);
 void *LObj_LoadAll(void **lobjdesc);
 HSD_Fog *Fog_LoadDesc(void *fogdesc);
 DOBJ *JOBJ_GetDObj(JOBJ *jobj);
-void *MOBJ_SetAlpha(DOBJ *dobj);
+void *MOBJ_SetAlpha(DOBJ *dobj, float alpha);
 void MOBJ_SetToonTextureImage(_HSD_ImageDesc *);
 void GObj_CopyGXPri(GOBJ *target, GOBJ *source);
 #endif

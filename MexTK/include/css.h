@@ -18,6 +18,44 @@
 #define MENU_BUTTON_X 0x400
 #define MENU_BUTTON_Y 0x800
 
+enum CSSKind
+{
+    SLCHRKIND_VS,              // regular vs
+    SLCHRKIND_SNAPSHOT,        // camera mode
+    SLCHRKIND_STAMINA,         //
+    SLCHRKIND_SUDDEN,          //
+    SLCHRKIND_GIANT,           //
+    SLCHRKIND_TINY,            //
+    SLCHRKIND_INVISIBLE,       //
+    SLCHRKIND_FIXEDCAM,        //
+    SLCHRKIND_SNGLBTN,         //
+    SLCHRKIND_FAST,            //
+    SLCHRKIND_SLOW,            //
+    SLCHRKIND_CLASSIC,         //
+    SLCHRKIND_ADV,             //
+    SLCHRKIND_ALLSTAR,         //
+    SLCHRKIND_EVENT,           //
+    SLCHRKIND_TARGET,          //
+    SLCHRKIND_HOMERUN,         //
+    SLCHRKIND_MULTIMAN10,      //
+    SLCHRKIND_MULTIMAN100,     //
+    SLCHRKIND_MULTIMAN3MIN,    //
+    SLCHRKIND_MULTIMAN15MIN,   //
+    SLCHRKIND_MULTIMANENDLESS, //
+    SLCHRKIND_MULTIMANCRUEL,   //
+    SLCHRKIND_TRAINING,        //
+};
+
+enum CSSExitKind
+{
+    CSSEXIT_NONE,        // can be used to identify LRStart to go back to main menu
+    CSSEXIT_SSS,         //
+    CSSEXIT_MAINMENU,    //
+    CSSEXIT_RULES,       //
+    CSSEXIT_NAME,        // name entry
+    CSSEXIT_SUBMENUOPEN, // in rules / name entry
+};
+
 /*** Structs ***/
 struct CSSBackup
 {
@@ -40,15 +78,18 @@ struct MnSelectChrDataTable
     void *lobj1;
     void *lobj2;
     void *fog;
-    JOBJSet bg;
-    JOBJSet cursor;
-    JOBJSet puck;
-    JOBJSet vsmenu;
-    JOBJSet start;
-    JOBJSet camdoor;
-    JOBJSet solomenu;
-    JOBJSet solooption;
-    JOBJSet cpudoor;
+    struct
+    {
+        JOBJSet bg;
+        JOBJSet cursor;
+        JOBJSet puck;
+        JOBJSet vsmenu;
+        JOBJSet start;
+        JOBJSet camdoor;
+        JOBJSet solomenu;
+        JOBJSet solooption;
+        JOBJSet cpudoor;
+    } jobjset;
 };
 
 enum CSSCursorState
@@ -60,22 +101,44 @@ enum CSSCursorState
 };
 struct CSSCursor
 {
-    GOBJ *gobj;
-    u8 port;
-    u8 state; // 0x5, 0x0 = Pointing / 0x1 = Holding Puck / 0x2 = Open Hand / 0x3 = Hidden/Unplugged
-    u8 puck;  // 0x6, puck index being held
-    u8 x7;    // 0x7,
-    u16 x8;
-    u16 exit_timer; // 0xa, frames held B
-    Vec2 pos;       // 0xc-0x10
+    GOBJ *gobj;         // 0x0
+    u8 port;            // 0x4
+    u8 state;           // 0x5, 0x0 = Pointing / 0x1 = Holding Puck / 0x2 = Open Hand / 0x3 = Hidden/Unplugged
+    u8 puck;            // 0x6, puck index being held
+    u8 x7;              // 0x7,
+    u16 is_over_option; // 0x8, is hovered over an option on the top of the CSS (rules, teams, back)
+    u16 exit_timer;     // 0xa, frames held B
+    Vec2 pos;           // 0xc-0x10
 };
 
+enum CSSObjectKind
+{
+    SLCHROBJKIND_P1PUCK,
+    SLCHROBJKIND_P2PUCK,
+    SLCHROBJKIND_P3PUCK,
+    SLCHROBJKIND_P4PUCK,
+    SLCHROBJKIND_P1CPU,
+    SLCHROBJKIND_P2CPU,
+    SLCHROBJKIND_P3CPU,
+    SLCHROBJKIND_P4CPU,
+    SLCHROBJKIND_P1HANDICAP,
+    SLCHROBJKIND_P2HANDICAP,
+    SLCHROBJKIND_P3HANDICAP,
+    SLCHROBJKIND_P4HANDICAP,
+};
+enum CSSPuckState
+{
+    SLCHRPUCK_0,
+    SLCHRPUCK_1,
+    SLCHRPUCK_2,
+    SLCHRPUCK_3,
+};
 struct CSSPuck
 {
     GOBJ *gobj;       // 0x0,
     u8 port;          // 0x4, port this puck belongs to
     u8 state;         // 0x5, 0x0 = Pointing / 0x1 = Holding Puck / 0x2 = Open Hand / 0x3 = Hidden/Unplugged
-    u8 held;          // 0x6, port that this puck is being held by
+    u8 kind;          // 0x6, port that this puck is being held by
     u8 anim_timer;    // 0x7, Animation Timer. resets animation when this hits 39, checked for @ 80262790
     Vec2 pos_proj;    // 0x8, where the puck should be
     Vec2 pos_correct; // 0x10, where the puck is corrected to
@@ -83,12 +146,12 @@ struct CSSPuck
 
 struct MnSlChrIcon
 {
-    u8 ft_hudindex; // used for getting combo count @ 8025c0c4
-    u8 ft_kind;     // icons external ID
-    u8 state;       // Dictates whether icon can be chosen. 0x0 = Not Unlocked, 0x1 = Unlocked (temp value), 0x2 = Unlocked and Displayed
-    u8 anim_timer;  // is made to be 0xC when the character is chosen.
-    u8 joint_id;    // icon background jobj ID
-    u8 joint2_id;   // used to icons JObj pointer
+    u8 ft_hudindex; // 0x0, used for getting combo count @ 8025c0c4
+    u8 c_kind;      // 0x1, icons external ID
+    u8 state;       // 0x2, Dictates whether icon can be chosen. 0x0 = Not Unlocked, 0x1 = Unlocked (temp value), 0x2 = Unlocked and Displayed
+    u8 anim_timer;  // 0x3, is made to be 0xC when the character is chosen.
+    u8 joint_id_vs; // 0x4, vs icon background jobj ID
+    u8 joint_id_1p; // 0x5, 1p icon background jobj ID
     int sfx;        // 0x8,
     float bound_l;  // 0xC
     float bound_r;  // 0x10
@@ -96,44 +159,37 @@ struct MnSlChrIcon
     float bound_d;  // 0x18
 };
 
-enum DoorState
-{
-    DOOR_HMN,
-    DOOR_CPU,
-    DOOR_UNK,
-    DOOR_CLOSED,
-};
 struct MnSlChrDoor
 {
-    u8 x0;
-    u8 csp_joint;
-    u8 x2;
-    u8 joint_id; // 0x3
-    u8 x4;
-    u8 x5; // nametag window joint id
-    u8 x6;
-    u8 cpuslider_joint; // 0x7
-    u8 slider2_joint;   //0x8
-    u8 x9;
-    u8 dooranim_timer; // 0xa
-    u8 state;          // 0x0 = HMN, 0x1 = CPU, 0x3 = Closed
-    u8 xc;
-    u8 costume;  // 0xd
-    u8 sel_icon; // 0xe, icon this player has selected
-    u8 xf;
-    u8 x10;
-    u8 slideranim_timer;
-    u8 x12;
-    u8 x13;
-    float button_l; // HMN button bound
-    float button_t; // HMN button bound
-    float button_u; // HMN button bound
-    float button_d; // HMN button bound
+    u8 x0;                      // 0x0
+    u8 csp_joint;               // 0x1
+    u8 x2;                      // 0x2
+    u8 joint_id;                // 0x3
+    u8 x4;                      // 0x4
+    u8 tag_window_joint;        // 0x5, nametag window joint id (to scroll and choose a name)
+    u8 slidername_joint;        // 0x6, slider name joint
+    u8 cpuslider_joint;         // 0x7, used when only CPU is showing
+    u8 cpuslider2_joint;        // 0x8, used when handicap is also showing
+    u8 selected_since_load;     // 0x9, used to determine when the player made a selection since the CSS loaded
+    u8 team;                    // 0xa
+    u8 p_kind;                  // 0xb, PlayerKind, 0x0 = HMN, 0x1 = CPU, 0x3 = Closed
+    u8 xc;                      // 0xc
+    u8 costume;                 // 0xd
+    u8 sel_icon;                // 0xe, icon this player has selected
+    u8 xf;                      // 0xf
+    u8 dooranim_timer;          // 0x10
+    u8 slideranim_timer;        // 0x11
+    u8 is_hold_cpu_slider;      // 0x12
+    u8 is_hold_handicap_slider; // 0x13
+    float togglebtn_left;       // 0x14, HMN button bound
+    float togglebtn_right;      // 0x18, HMN button bound
+    float teambtn_left;         // 0x1C, team button bound
+    float teambtn_right;        // 0x20, team button bound
 };
 
 struct MnSlChrTagData
 {
-    Text *name;
+    Text *name;         // 0x0
     Text *namelist;     // 0x4, used when opening the tag window
     float x8;           // 0x8
     float scroll_amt;   // xC, Text Y Offset to scroll up each frame
@@ -147,12 +203,12 @@ struct MnSlChrTagData
 
 struct MnSlChrTag
 {
-    MnSlChrTagData *tag_data;
-    u8 x4;
-    u8 list_joint;
-    u8 name_joint;
-    u8 x7;
-    u8 kostartext_joint;
+    MnSlChrTagData *tag_data; // 0x0
+    u8 x4;                    // 0x4
+    u8 list_joint;            // 0x5
+    u8 name_joint;            // 0x6
+    u8 x7;                    // 0x7
+    u8 kostartext_joint;      // 0x8
     u8 x9;
     u8 xa;
     u8 xb;
@@ -182,8 +238,8 @@ struct MnSlChrData
     u8 x476;                   // 0x476
     u8 x477;                   // 0x477
     u8 x478;                   // 0x478
-    u8 x479;                   // 0x479
-    u8 x47a;                   // 0x47a
+    u8 tag_window_joint;       // 0x479, for singleplayer
+    u8 tag_box_joint;          // 0x47a, for singleplayer
     u8 x47b;                   // 0x47b
     u8 x47c;                   // 0x47c
     u8 x47d;                   // 0x47d
@@ -199,11 +255,11 @@ struct MnSlChrData
 
 struct VSMinorData
 {
-    u16 x0;
-    u8 css_kind;   // 0 = VS
-    u8 exit_kind;  // 1 = advance, 2 = leave
-    void *ko_data; // used for displaying KO stars on CSS
-    ScDataVS vs_data;
+    u16 x0;           // 0x0
+    u8 css_kind;      // 0x2, 0 = VS
+    u8 exit_kind;     // 0x3, 1 = advance, 2 = leave
+    u8 *ko_data;      // 0x4, used for displaying KO stars on CSS
+    ScDataVS vs_data; // 0x8
 };
 struct SSSMinorData
 {
@@ -216,43 +272,48 @@ struct SSSMinorData
 };
 
 /*** Variables ***/
-MnSlChrData *stc_css_data = 0x803f0a48;
-VSMinorData **stc_css_minorscene = R13 + (-0x49F0);
-u8 *stc_css_regtagnum = R13 + (-0x49A8); // number of registered tags
-u8 *stc_css_49b0 = R13 + (-0x49B0);
-u8 *stc_css_49a7 = R13 + (-0x49A7);
-u8 *stc_css_49a8 = R13 + (-0x49A8);
-ArchiveInfo **stc_css_archive = R13 + (-0x49D0);
-ArchiveInfo **stc_css_menuarchive = R13 + (-0x49CC);
-u8 *stc_css_49ac = R13 + (-0x49AC);
-GOBJ **stc_css_menugobj = R13 + (-0x49E4);
-JOBJ **stc_css_menumodel = R13 + (-0x49E0);
-CSSCursor **stc_css_cursors = 0x804a0bc0;
-CSSPuck **stc_css_pucks = 0x804a0bd0;
+MnSlChrData *stc_css_data;         // 0x803f0a48
+VSMinorData **stc_css_minorscene;  // -0x49F0
+u8 *stc_css_regtagnum;             // -0x49A8, number of registered tags
+s8 *stc_css_name_ply;              // -0x49A7, index of the player using the name entry menu
+HSD_Archive **stc_css_archive;     // -0x49D0
+HSD_Archive **stc_css_menuarchive; // -0x49CC, ptr to MnMaExt archive
+u8 *stc_css_custom_rules;          // -0x49AC
+GOBJ **stc_css_menugobj;           // -0x49E4
+JOBJ **stc_css_menumodel;          // -0x49E0
+JOBJ **stc_css_trainingmodel;      // -0x49DC
+JOBJ **stc_css_cameramodel;        // -0x49D4
+CSSCursor **stc_css_cursors;       // 0x804a0bc0
+CSSPuck **stc_css_pucks;           // 0x804a0bd0
 
-u8 *stc_css_hmnport = R13 + (-0x49B0);
-u8 *stc_css_cpuport = R13 + (-0x49AF);
-u8 *stc_css_delay = R13 + (-0x49AE);
-u8 *stc_css_maxply = R13 + (-0x49AB);
-u8 *stc_css_singeplyport = R13 + (-0x4DE0);
-u8 *stc_css_49f0 = R13 + (-0x49f0);
-int *stc_css_49c0 = R13 + (-0x49c0);
-int *stc_css_49c4 = R13 + (-0x49c4);
-int *stc_css_49b8 = R13 + (-0x49b8);
-int *stc_css_49bc = R13 + (-0x49bc);
-int *stc_css_bgtimer = R13 + (-0x49b4);
-u8 *stc_css_hasreleasedb = R13 + (-0x49ad);
-u8 *stc_css_exitkind = R13 + (-0x49aa);
-u8 *stc_css_49a9 = R13 + (-0x49a9);
-MnSelectChrDataTable **stc_css_datatable = R13 + (-0x49EC);
-COBJDesc **stc_css_cobjdesc = R13 + (-0x4ADC);
-GOBJ **stc_css_camgobj = R13 + (-0x49E8);
-HSD_Pad *stc_css_pad = 0x804c20bc;
-u8 *stc_css_unkarr = 0x804d50c8;
+s8 *stc_css_hmnport;                      // -0x49B0
+s8 *stc_css_cpuport;                      // -0x49AF
+u8 *stc_css_delay;                        // -0x49AE
+u8 *stc_css_exitkind;                     // -0x49AA
+u8 *stc_css_maxply;                       // -0x49AB
+u8 *stc_css_is_ready_timer;               // -0x49A9
+u8 *stc_css_singeplyport;                 // -0x4DE0
+Text **stc_css_ply1_combo_text;           // -0x49C0
+Text **stc_css_ply2_combo_text;           // -0x49C4
+Text **stc_css_ply3_combo_text;           // -0x49B8
+Text **stc_css_ply4_combo_text;           // -0x49BC
+int *stc_css_bgtimer;                     // -0x49B4
+u8 *stc_css_hasreleasedb;                 // -0x49AD
+MnSelectChrDataTable **stc_css_datatable; // -0x49EC
+JOBJSet **stc_css_jobjsets;               // -0x49C8
+COBJDesc **stc_css_cobjdesc;              // -0x4ADC
+GOBJ **stc_css_camgobj;                   // -0x49E8
+HSD_Pad *stc_css_pad;                     // 0x804c20bc
+u8 *stc_css_unkarr;                       // 0x804d50c8
 
 /*** Functions ***/
 void MainMenu_CamRotateThink(GOBJ *gobj);
 int MainMenu_GetPadDown(int controller_index);
+int MainMenu_CheckForLRA();
+void MainMenu_DestroyAllGObjsClass(int class);                  // destroys all gobjs of class X
+void MainMenu_DestroyAllGObjsSubclass(int class, int subclass); // destroys all gobjs of class X AND subclass Y
+void MainMenu_DestroyAllTextCanvases();                         // destroys all SIS canvases
+void CSS_FreeText();                                            //
 int CSS_GetNametagRumble(int player, u8 tag);
 void CSS_InitPlayerData(PlayerData *player);
 void CSS_MenuModelThink(GOBJ *gobj);
