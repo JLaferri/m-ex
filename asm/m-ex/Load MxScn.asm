@@ -1,17 +1,18 @@
-#To be inserted at 803753b0
+#To be inserted at 803753b4
 .include "../Globals.s"
 .include "Header.s"
 
 .set  REG_HeapLo,31
+.set  REG_HeapHi,29
 .set  REG_FileSize,28
 .set  REG_File,27
 .set  REG_HeapID,26
 .set  REG_Header,25
-.set  REG_mexData,24
+.set  REG_MxScene,24
 
 backup
 
-#Get size of MnDt.dat
+#Get size of MxScn.dat
   bl  FileName
   mflr  r3
   branchl r12,0x800163d8
@@ -51,9 +52,18 @@ backup
   bl  SymbolName
   mflr  r4
   branchl r12,0x80380358
-  mr  REG_mexData,r3
-  stw REG_mexData,OFST_mexData(rtoc)
+  mr  REG_MxScene,r3
+  lwz r3, 0x0(REG_MxScene)
+  stw r3, OFST_MajorScenes(rtoc)
+  lwz r3, 0x4(REG_MxScene)
+  stw r3, OFST_MinorScenes(rtoc)
 
+# set last major num
+  li  r3,45
+  stw r3,OFST_MetaData_TermMajor(rtoc)
+  stw r3,OFST_MetaData_TermMinor(rtoc)
+
+/*
 #Copy table pointers
 .set  REG_Offsets,9
 .set  REG_Count,8
@@ -72,7 +82,7 @@ CopyPointers_InitWalkLoop:
   extsh r3,r3
   cmpwi r3,-1
   beq CopyPointers_Exit
-  mr  REG_currArchOffset,REG_mexData
+  mr  REG_currArchOffset,REG_MxScene
 CopyPointers_WalkLoop:
 #Get bottom of chain
   lhzu  r3,0x2(REG_Offsets)
@@ -89,7 +99,9 @@ CopyPointers_IncLoop:
   addi  REG_Count,REG_Count,1
   b CopyPointers_Loop
 CopyPointers_Exit:
+*/
 
+/*
 #Init preload table
 PreloadInit:
   lwz r3,OFST_Metadata_FtExtNum(rtoc)
@@ -101,16 +113,12 @@ PreloadInit_Loop:
   addi  r5,r5,1
   cmpwi r5,8
   blt PreloadInit_Loop
+*/
 
 #Flush instruction cache so code can be run from this file
   mr  r3,REG_File
   mr  r4,REG_FileSize
   branchl r12,0x80328f50
-
-# TEMP #
-# set last major num
-  #li  r3,45
-  #stw r3,OFST_MetaData_TermMajor(rtoc)
 
 # persistent file reloc
   bl  tempalloc
@@ -149,11 +157,11 @@ blrl
 
 FileName:
 blrl
-.string "MxDt.dat"
+.string "MxScn.dat"
 .align 2
 SymbolName:
 blrl
-.string "mexData"
+.string "MxScene"
 .align 2
 Assert_Name:
 blrl
@@ -161,6 +169,7 @@ blrl
 .align 2
 
 
+/*
 rtocOffsets:
   blrl
   #indexed by rtoc order
@@ -264,11 +273,12 @@ rtocOffsets:
   .hword Arch_Metadata,-1
   .hword  -1
   .align 2
+*/
 
 Exit:
   mr  r3,REG_HeapLo
   restore
-  mr  r31,r3
-  stw	r31, -0x3FE8 (r13)
-  mr	r3, r31
-  mr	r4, r29
+  mr  REG_HeapLo,r3
+  stw	REG_HeapLo, -0x3FE8 (r13)
+  mr	r3, REG_HeapLo
+  mr	r4, REG_HeapHi
