@@ -1,4 +1,6 @@
 .set debug, 0
+.set  MEXVersionMajor,1
+.set  MEXVersionMinor,1
 
 #Constants
 .set  PersonalEffectStart,5000  # used for stage effects, need to rework this?
@@ -134,15 +136,19 @@
   .set mdAddDesc_modelvisdesc_table, 0x4
 .set mdAddDesc_dynamicshitnum, 0x18
 .set mdAddDesc_dynamicshitdesc, 0x1C
+.set mdAddDesc_animjoint, 0x20
+.set mdAddDesc_matanimjoint, 0x24
+.set mdAddDesc_script, 0x28
 
 #FtModelAdd
-.set mdAdd_size, 0x30
+.set mdAdd_size, mdAdd_scriptdata + 0x80 # 0x30
 .set mdAdd_JOBJ, 0x0
 .set mdAdd_attachbone, 0x4
 .set mdAdd_DOBJLookup, 0x8
   .set mdAdd_bonenum, 0x0
   .set mdAdd_dobjarr, 0x4
 .set mdAdd_ftpartsvis, 0x10
+.set mdAdd_scriptdata, 0x30
 
 #Scene Data
 .set  MajorStride,0x18
@@ -164,6 +170,8 @@
   .set  Arch_Metadata_BootScene,0x28
   .set  Arch_Metadata_TermMajor,0x2C
   .set  Arch_Metadata_TermMinor,0x30
+  .set  Arch_Metadata_TrophyCount,0x34
+  .set  Arch_Metadata_TrophySDOff,0x38
 .set  Arch_Menu,0x4
   .set  Arch_Menu_MenuParam,0x0
     .set  MenuParam_HandScale,0x0
@@ -214,6 +222,10 @@
     .set RaceTimes_Stride,0x4
   .set  Arch_Fighter_RuntimeIntroParam, 0x70
     .set RuntimeIntroParam_Stride, 0x4
+  .set  Arch_Fighter_ClassicTrophyLookup, 0x74
+  .set  Arch_Fighter_AdventureTrophyLookup, 0x78
+  .set  Arch_Fighter_AllStarTrophyLookup, 0x7C
+  .set  Arch_Fighter_EndingFallScale, 0x80
 .set  Arch_FighterFunc,0xC
   .set  Arch_FighterFunc_onLoad,0x0
   .set  Arch_FighterFunc_onDeath,0x4
@@ -256,15 +268,16 @@
   .set  Arch_FighterFunc_onGetExtResultAnim,0x98
   .set  Arch_FighterFunc_onIndexExtResultAnim,0x9C
   .set  Arch_FighterFunc_MoveLogicDemo,0xA0
-  .set  Arch_FighterFunc_onThrowF,0xA4
-  .set  Arch_FighterFunc_onThrowB,0xA8
-  .set  Arch_FighterFunc_onThrowHi,0xAC
-  .set  Arch_FighterFunc_onThrowLw,0xB0
+  .set  Arch_FighterFunc_onIntroL,0xA4
+  .set  Arch_FighterFunc_onIntroR,0xA8
+  .set  Arch_FighterFunc_onTaunt,0xAC
+  .set  Arch_FighterFunc_onCatch,0xB0
   .set  Arch_FighterFunc_GetTrailData,0xB4
 .set  Arch_FGM,0x10
   .set  Arch_FGM_Files,0x0
   .set  Arch_FGM_Flags,0x4
   .set  Arch_FGM_LookupTable,0x8
+    .set  FGM_LookupTable_Stride,0x4
   .set  Arch_FGM_RuntimeStruct,0xC
     .set  Arch_SSMRuntimeStruct_Header,0x0
     .set  Arch_SSMRuntimeStruct_ToLoadOrig,0x4
@@ -431,12 +444,27 @@
 .set  OFST_MetaData_GrIntNum,OFST_MetaData_TermMinor+0x4
 .set  OFST_MetaData_GrExtNum,OFST_MetaData_GrIntNum+0x4
 .set  OFST_Metadata,OFST_MetaData_GrExtNum+0x4
+
 .set  OFST_mexData,OFST_Metadata+0x4
 
 #Gross bullshit I don't want here
 .set  OFST_EasterEgg,OFST_mexData + 0x4
 .set  OFST_HeapRuntime,OFST_EasterEgg + 0x8
 
+# NOTE: the following are out of order to prevent incompatibility 
+# with slippi's m-ex and akaneia 0.82 m-ex
+#Trophy stuff 
+.set  OFST_ClassicTrophyLookup, OFST_HeapRuntime + 0x4
+.set  OFST_AdventureTrophyLookup, OFST_ClassicTrophyLookup + 0x4
+.set  OFST_AllStarTrophyLookup, OFST_AdventureTrophyLookup + 0x4
+.set  OFST_TrophyFallScale, OFST_AllStarTrophyLookup + 0x4
+.set  OFST_MetaData_TrophyCount,OFST_TrophyFallScale + 0x4
+.set  OFST_MetaData_TrophySDOff,OFST_MetaData_TrophyCount+0x4
+# Fighter state hooks
+.set  OFST_FighterOnIntroL, OFST_MetaData_TrophySDOff + 0x4
+.set  OFST_FighterOnIntroR, OFST_FighterOnIntroL + 0x4
+.set  OFST_FighterOnTaunt, OFST_FighterOnIntroR + 0x4
+.set  OFST_FighterOnCatch, OFST_FighterOnTaunt + 0x4
 
 # Fighter Data
 .set FighterDataOrigSize, 0x23ec
@@ -450,7 +478,8 @@
 .set  MEX_UCFPrevX, MEX_UCFCurrX + 0x1   #1 byte
 .set  MEX_UCF2fX, MEX_UCFPrevX + 0x1   #1 byte
 .set  MEX_align, MEX_UCF2fX + 0x1   #1 byte
-.set  MEX_FtModelAdd_num, MEX_align + 0x1   #4 bytes
+.set  MEX_Costume_ptr, MEX_align + 0x1   #4 bytes
+.set  MEX_FtModelAdd_num, MEX_Costume_ptr + 0x4   #4 bytes
 .set  MEX_FtModelAdd_ptr, MEX_FtModelAdd_num + 0x4   #4 bytes
 .set  MEX_FighterDataEnd, MEX_FtModelAdd_ptr + 0x4
 
